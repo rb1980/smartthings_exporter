@@ -122,7 +122,7 @@ var (
 
 		"motion": {prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "motion_detected"),
-			"1 if presence is detected.", []string{"id", "name"}, nil),
+			"1 if motion is detected.", []string{"id", "name"}, nil),
 			func(i interface{}) (f float64, e error) {
 				return valueOneOf(i, valInactiveActive)
 			}},
