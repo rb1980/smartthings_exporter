@@ -42,5 +42,5 @@ Follow the prompts to authorize the app.
 Now we can start Smartthings_exporter by running:
 
 ```
-$ smartthings_exporter --smartthings.oauth-client=<client_id> --smartthings.oauth-token.file=.sttoken
+$ smartthings_exporter --smartthings.oauth-client=<client_id> --smartthings.oauth-token.file=.st_token
 ```
