@@ -153,19 +153,8 @@ function run() {
   go install ./... || fatal "go install failed: $?"
   go test -i ./... || fatal "go test install failed: $?"
 
-  verbose "Formatting source..."
-  if [[ ${#gofiles[@]} -gt 0 ]]; then
-    while read -r gofile; do
-      gofmt -s -w $PWD/$gofile
-    done <<< "$gofiles"
-  fi
-
-  if [[ -n "$TRAVIS" && -n "$(git status --porcelain)" ]]; then
-    fatal "Source not formatted"
-  fi
-
   verbose "Linting source..."
-  ${GOCILINTER} run --disable-all --enable vet,gocyclo,golint,ineffassign --verbose  || fatal "gocilinter failed: $?"
+  ${GOCILINTER} run --disable-all --enable vet,gocyclo,golint,ineffassign,gofmt --verbose  || fatal "gocilinter failed: $?"
 
   verbose "Checking licenses..."
   local licRes=$(
