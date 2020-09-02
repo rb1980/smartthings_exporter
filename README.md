@@ -2,7 +2,7 @@
 
 Smartthings_exporter is a command line tool to export information about your SmartThings
 sensors in a format that can be scraped by [Prometheus](http://prometheus.io). The tool uses 
-the [GoSmart](http://github.com/marcopaganini/gosmart) library to talk to SmartThings and collect 
+the [GoSmart](http://github.com/kadaan/gosmart) library to talk to SmartThings and collect 
 sensor data and exposed the metrics over http.
 
 ## Installation
@@ -16,18 +16,18 @@ Smartthings_exporter (this step will also download and compile the GoSmart libra
 $ go get -u github.com/kadaan/smartthings_exporter
 ```
 
-### Smartthings Setup
+### SmartThings Setup
 
-Before you can use Smartthings_exporter, you need to register it with Smartthings.  
+Before you can use Smartthings_exporter, you need to register it with SmartThings.  
 
-The first step is to setup the API that Smartthings_exporter uses to communicate with Smartthings.  Follow the 
+The first step is to setup the API that Smartthings_exporter uses to communicate with SmartThings.  Follow the 
 [GoSmart Smartthings API setup](https://github.com/kadaan/gosmart#smartthings-api-setup) steps.
 
 Take note of the `client_id` and `client_secret` of your SmartThings app that you just created.
 
 ### Smartthings_exporter configuration
 
-We now need to register Smartthings_exporter to with your Smartthings app.
+We now need to register Smartthings_exporter to with your SmartThings app.
 
 Run:
 
@@ -42,5 +42,5 @@ Follow the prompts to authorize the app.
 Now we can start Smartthings_exporter by running:
 
 ```
-$ smartthings_exporter --smartthings.oauth-client=<client_id> --smartthings.oauth-token.file=.st_token
+$ smartthings_exporter --smartthings.oauth-client=[client_id] --smartthings.oauth-token.file=.st_token
 ```
