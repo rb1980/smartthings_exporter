@@ -54,44 +54,16 @@ function get_platform() {
 }
 
 PLATFORM=$(get_platform)
-GLIDE=${BINARY_DIR}/glide
-GLIDE_URL="https://github.com/Masterminds/glide/releases/download/v0.13.1/glide-v0.13.1-$PLATFORM-amd64.tar.gz"
 GOX="gox"
-GOMETALINTER=${BINARY_DIR}/gometalinter
-GOMETALINTER_URL="https://github.com/alecthomas/gometalinter/releases/download/v2.0.4/gometalinter-2.0.4-$PLATFORM-amd64.tar.gz"
-UPX="upx"
+GOCILINTER=${BINARY_DIR}/golangci-lint
+GOCILINTER_URL=https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
+GOCILINTER_VERSION=v1.30.0
+UPX="$BINARY_DIR/upx"
 
-function download_glide() {
-  if [[ ! -f "$GLIDE" ]]; then
-    verbose "   --> $GLIDE"
-    local tmpdir=`mktemp -d`
-    trap_add "rm -rf $tmpdir" EXIT
-    pushd ${tmpdir}
-    curl -L -s -O ${GLIDE_URL} || fatal "failed to download 'GLIDE_URL': $?"
-    for i in *.tar.gz; do
-      [[ "$i" = "*.tar.gz" ]] && continue
-      tar xzf "$i" -C ${tmpdir} --strip-components 1 && rm -r "$i"
-    done
-    popd
-    mkdir -p ${BINARY_DIR}
-    cp ${tmpdir}/* ${BINARY_DIR}/
-  fi
-}
-
-function download_gometalinter() {
-  if [[ ! -f "$GOMETALINTER" ]]; then
-    verbose "   --> $GOMETALINTER"
-    local tmpdir=`mktemp -d`
-    trap_add "rm -rf $tmpdir" EXIT
-    pushd ${tmpdir}
-    curl -L -s -O ${GOMETALINTER_URL} || fatal "failed to download '$GOMETALINTER_URL': $?"
-    for i in *.tar.gz; do
-      [[ "$i" = "*.tar.gz" ]] && continue
-      tar xzf "$i" -C ${tmpdir} --strip-components 1 && rm -r "$i"
-    done
-    popd
-    mkdir -p ${BINARY_DIR}
-    cp ${tmpdir}/* ${BINARY_DIR}/
+function download_gocilinter() {
+  if [[ ! -f "$GOCILINTER" ]]; then
+    verbose "   --> $GOCILINTER"
+    curl -sSfL $GOCILINTER_URL | sh -s -- -b ${BINARY_DIR} $GOCILINTER_VERSION || fatal "failed to download '$GOCILINTER_URL': $?"
   fi
 }
 
@@ -121,9 +93,8 @@ function download_upx() {
 }
 
 function download_binaries() {
-  download_glide || fatal "failed to download 'glide': $?"
   download_gox || fatal "failed to download 'gox': $?"
-  download_gometalinter || fatal "failed to download 'gometalinter': $?"
+  download_gocilinter || fatal "failed to download 'gocilinter': $?"
   download_goveralls || fatal "failed to download 'goveralls': $?"
   download_upx || fatal "failed to download 'upx': $?"
   export PATH=$PATH:${BINARY_DIR}
@@ -150,14 +121,6 @@ function parse_args() {
       --build_all)
         build_all=true
       ;;
-      --clear_cache)
-        if [[ -f ${GLIDE} ]]; then
-          verbose "Clearing glide cache..."
-          ${GLIDE} cc || fatal "failed to clear glide cache: $?"
-        fi
-        verbose "Deleting $BINARY_DIR ..."
-        rm -rf ${BINARY_DIR} || fatal "failed to delete $BINARY_DIR: $?"
-      ;;
     esac
   done
 }
@@ -171,7 +134,7 @@ function run() {
   local host=`hostname`
   local buildDate=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
   local go_version="$(cat ${BUILD_DIR}/.go-version)"
-  go version | grep -q "go version go${go_version} " || fatal "go version is not ${go_version}"
+  go version | grep -q "go version go${go_version%*.0} " || fatal "go version is not ${go_version%*.0}"
 
   if [[ -z "$TRAVIS" ]]; then
     verbose "Cleanup dist..."
@@ -182,7 +145,7 @@ function run() {
   download_binaries
 
   verbose "Getting dependencies..."
-  ${GLIDE} install -v || fatal "glide install failed: $?"
+  go get || fatal "go get failed: $?"
 
   local gofiles=$(find . -path ./vendor -prune -o -print | grep '\.go$')
 
@@ -202,7 +165,7 @@ function run() {
   fi
 
   verbose "Linting source..."
-  ${GOMETALINTER} --disable-all --enable=vet --enable=gocyclo --cyclo-over=15 --enable=golint --min-confidence=.85 --enable=ineffassign --skip=Godeps --skip=vendor --skip=third_party --skip=testdata --vendor ./... || fatal "gometalinter failed: $?"
+  ${GOCILINTER} run --disable-all --enable vet,gocyclo,golint,ineffassign --verbose  || fatal "gocilinter failed: $?"
 
   verbose "Checking licenses..."
   local licRes=$(
