@@ -76,6 +76,10 @@ var (
 			prometheus.BuildFQName(namespace, "", "contact_closed"),
 			"1 if the contact is closed.", []string{"id", "name"}, nil), valueClear},
 
+		"colorTemperature": {prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "color_temperature_kelvins"),
+			"Light color temperature.", []string{"id", "name"}, nil), valueFloat},
+
 		"contact": {prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "contact_closed"),
 			"1 if the contact is closed.", []string{"id", "name"}, nil),
@@ -98,6 +102,24 @@ var (
 			prometheus.BuildFQName(namespace, "", "relative_humidity_percentage"),
 			"Current relative humidity percentage.", []string{"id", "name"}, nil), valueFloat},
 
+		"hue": {prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "color_hue_percentage"),
+			"Light color hue percentage.", []string{"id", "name"}, nil), valueFloat},
+
+		"hvac_state": {prometheus.NewDesc(prometheus.BuildFQName(namespace, "", "hvac_on"),
+			"1 if the HVAC is on.", []string{"id", "name"}, nil),
+			func(i interface{}) (f float64, e error) {
+				return valueOneOf(i, valOffOn)
+			}},
+
+		"illuminance": {prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "illuminance_lux"),
+			"Light illuminance in lux.", []string{"id", "name"}, nil), valueFloat},
+
+		"level": {prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "level"),
+			"Level as a percentage.", []string{"id", "name"}, nil), valueFloat},
+
 		"motion": {prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "motion_detected"),
 			"1 if presence is detected.", []string{"id", "name"}, nil),
@@ -116,6 +138,10 @@ var (
 				return valueOneOf(i, valAbsentPresent)
 			}},
 
+		"saturation": {prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "color_saturation_percentage"),
+			"Light color saturation percentage.", []string{"id", "name"}, nil), valueFloat},
+
 		"smoke": {prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "smoke_detected"), "1 if smoke is detected.",
 			[]string{"id", "name"}, nil), valueClear},
@@ -126,9 +152,17 @@ var (
 				return valueOneOf(i, valOffOn)
 			}},
 
+		"tamper": {prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "tamper_sensor_clear"),
+			"1 if the tamper sensor is clear.", []string{"id", "name"}, nil), valueClear},
+
 		"temperature": {prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "temperature_fahrenheit"),
 			"Temperature in fahrenheit.", []string{"id", "name"}, nil), valueFloat},
+
+		"voltage": {prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "voltage_volts"),
+			"Energy voltage in Volts.", []string{"id", "name"}, nil), valueFloat},
 	}
 )
 
