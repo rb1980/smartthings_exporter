@@ -60,113 +60,86 @@ var (
 			Help: "Total number of metrics that were invalid.",
 		},
 	)
-	metrics = map[string]*metric{
-		"alarmState": {prometheus.NewDesc(
+	metrics = map[string]*prometheus.Desc{
+		"alarmState": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "alarm_cleared"), "0 if the alarm is clear.",
-			[]string{"id", "name"}, nil), valueClear},
+			[]string{"id", "name"}, nil),
 
-		"battery": {prometheus.NewDesc(
+		"battery": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "battery_percentage"),
-			"Percentage of battery remaining.", []string{"id", "name"}, nil), valueFloat},
+			"Percentage of battery remaining.", []string{"id", "name"}, nil),
 
-		"carbonMonoxide": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "contact_closed"),
-			"1 if the contact is closed.", []string{"id", "name"}, nil), valueClear},
-
-		"colorTemperature": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "color_temperature_kelvins"),
-			"Light color temperature.", []string{"id", "name"}, nil), valueFloat},
-
-		"contact": {prometheus.NewDesc(
+		"carbonMonoxide": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "contact_closed"),
 			"1 if the contact is closed.", []string{"id", "name"}, nil),
-			func(i interface{}) (f float64, e error) {
-				return valueOneOf(i, valOpenClosed)
-			}},
 
-		"energy": {prometheus.NewDesc(
+		"colorTemperature": prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "color_temperature_kelvins"),
+			"Light color temperature.", []string{"id", "name"}, nil),
+
+		"contact": prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "contact_closed"),
+			"1 if the contact is closed.", []string{"id", "name"}, nil),
+
+		"energy": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "energy_usage_joules"),
 			"Energy usage in joules.", []string{"id", "name"}, nil),
-			func(i interface{}) (f float64, e error) {
-				value, err := valueFloat(i)
-				if err != nil {
-					return 0, err
-				}
-				return value * 3600000, err
-			}},
 
-		"humidity": {prometheus.NewDesc(
+		"humidity": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "relative_humidity_percentage"),
-			"Current relative humidity percentage.", []string{"id", "name"}, nil), valueFloat},
+			"Current relative humidity percentage.", []string{"id", "name"}, nil),
 
-		"hue": {prometheus.NewDesc(
+		"hue": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "color_hue_percentage"),
-			"Light color hue percentage.", []string{"id", "name"}, nil), valueFloat},
+			"Light color hue percentage.", []string{"id", "name"}, nil),
 
-		"hvac_state": {prometheus.NewDesc(prometheus.BuildFQName(namespace, "", "hvac_on"),
+		"hvac_state": prometheus.NewDesc(prometheus.BuildFQName(namespace, "", "hvac_on"),
 			"1 if the HVAC is on.", []string{"id", "name"}, nil),
-			func(i interface{}) (f float64, e error) {
-				return valueOneOf(i, valOffOn)
-			}},
 
-		"illuminance": {prometheus.NewDesc(
+		"illuminance": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "illuminance_lux"),
-			"Light illuminance in lux.", []string{"id", "name"}, nil), valueFloat},
+			"Light illuminance in lux.", []string{"id", "name"}, nil),
 
-		"level": {prometheus.NewDesc(
+		"level": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "level"),
-			"Level as a percentage.", []string{"id", "name"}, nil), valueFloat},
+			"Level as a percentage.", []string{"id", "name"}, nil),
 
-		"motion": {prometheus.NewDesc(
+		"motion": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "motion_detected"),
 			"1 if motion is detected.", []string{"id", "name"}, nil),
-			func(i interface{}) (f float64, e error) {
-				return valueOneOf(i, valInactiveActive)
-			}},
 
-		"power": {prometheus.NewDesc(
+		"power": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "power_usage_watts"),
-			"Current power usage in watts.", []string{"id", "name"}, nil), valueFloat},
+			"Current power usage in watts.", []string{"id", "name"}, nil),
 
-		"presence": {prometheus.NewDesc(
+		"presence": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "presence_detected"),
 			"1 if presence is detected.", []string{"id", "name"}, nil),
-			func(i interface{}) (f float64, e error) {
-				return valueOneOf(i, valAbsentPresent)
-			}},
 
-		"saturation": {prometheus.NewDesc(
+		"saturation": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "color_saturation_percentage"),
-			"Light color saturation percentage.", []string{"id", "name"}, nil), valueFloat},
+			"Light color saturation percentage.", []string{"id", "name"}, nil),
 
-		"smoke": {prometheus.NewDesc(
+		"smoke": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "smoke_detected"), "1 if smoke is detected.",
-			[]string{"id", "name"}, nil), valueClear},
+			[]string{"id", "name"}, nil),
 
-		"switch": {prometheus.NewDesc(prometheus.BuildFQName(namespace, "", "switch_enabled"),
+		"switch": prometheus.NewDesc(prometheus.BuildFQName(namespace, "", "switch_enabled"),
 			"1 if the switch is on.", []string{"id", "name"}, nil),
-			func(i interface{}) (f float64, e error) {
-				return valueOneOf(i, valOffOn)
-			}},
 
-		"tamper": {prometheus.NewDesc(
+		"tamper": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "tamper_sensor_clear"),
-			"1 if the tamper sensor is clear.", []string{"id", "name"}, nil), valueClear},
+			"1 if the tamper sensor is clear.", []string{"id", "name"}, nil),
 
-		"temperature": {prometheus.NewDesc(
+		"temperature": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "temperature_fahrenheit"),
-			"Temperature in fahrenheit.", []string{"id", "name"}, nil), valueFloat},
+			"Temperature in fahrenheit.", []string{"id", "name"}, nil),
 
-		"voltage": {prometheus.NewDesc(
+		"voltage": prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "voltage_volts"),
-			"Energy voltage in Volts.", []string{"id", "name"}, nil), valueFloat},
+			"Energy voltage in Volts.", []string{"id", "name"}, nil),
 	}
 )
-
-type metric struct {
-	description *prometheus.Desc
-	valueMapper func(interface{}) (float64, error)
-}
 
 // Exporter collects smartthings stats and exports them using the prometheus metrics package.
 type Exporter struct {
@@ -203,7 +176,7 @@ func NewExporter(oauthClient string, oauthToken *oauth2.Token) (*Exporter, error
 // implements prometheus.Collector.
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	for _, m := range metrics {
-		ch <- m.description
+		ch <- m
 	}
 }
 
@@ -221,66 +194,18 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			if val == nil {
 				val = ""
 			}
-			var value float64
-			//var metricDesc *prometheus.Desc
 			metric := metrics[k]
 			if metric == nil {
 				continue
 			}
-			value, err = metric.valueMapper(val)
-			if err == nil {
-				ch <- prometheus.MustNewConstMetric(metric.description, prometheus.GaugeValue, value, dev.ID, dev.DisplayName)
+			if value, ok := val.(float64); ok {
+				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value, dev.ID, dev.DisplayName)
 			} else {
 				invalidMetric.Inc()
 				plog.Errorf("Cannot process sensor data for %s (%v): %v", k, val, err)
 			}
 		}
 	}
-}
-
-// valueClear expects a string and returns 0 for "clear", 1 for anything else.
-// TODO: Expand this to properly identify non-clear conditions and return error
-// in case an unexpected value is found.
-func valueClear(v interface{}) (float64, error) {
-	val, ok := v.(string)
-	if !ok {
-		return 0.0, fmt.Errorf("invalid non-string argument %v", v)
-	}
-	if val == "clear" {
-		return 0.0, nil
-	}
-	return 1.0, nil
-}
-
-// valueOneOf returns 0.0 if the value matches the first item
-// in the array, 1.0 if it matches the second, and an error if
-// nothing matches.
-func valueOneOf(v interface{}, options []string) (float64, error) {
-	val, ok := v.(string)
-	if !ok {
-		return 0.0, fmt.Errorf("invalid non-string argument %v", v)
-	}
-	if val == options[0] {
-		return 0.0, nil
-	}
-	if val == options[1] {
-		return 1.0, nil
-	}
-	return 0.0, fmt.Errorf("invalid option %q. Expected %q or %q", val, options[0], options[1])
-}
-
-// valueFloat returns the float64 value of the value passed or
-// error if the value cannot be converted.
-func valueFloat(v interface{}) (float64, error) {
-	stringVal, ok := v.(string)
-	if ok && stringVal == "" {
-		return 0.0, nil
-	}
-	val, ok := v.(float64)
-	if !ok {
-		return 0.0, fmt.Errorf("invalid non floating-point argument %v", v)
-	}
-	return val, nil
 }
 
 func init() {
