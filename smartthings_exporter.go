@@ -54,10 +54,6 @@ var (
 	monitorOAuthClient    *string
 	monitorOAuthTokenFile *string
 
-	valOpenClosed     = []string{"open", "closed"}
-	valInactiveActive = []string{"inactive", "active"}
-	valAbsentPresent  = []string{"not present", "present"}
-	valOffOn          = []string{"off", "on"}
 	invalidMetric     = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Name: "smartthings_invalid_metric",
