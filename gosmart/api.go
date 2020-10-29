@@ -13,27 +13,27 @@ import (
 )
 
 type getSensorsResult struct {
-	Descriptions map[string]string `json:"descriptions"`
-	Sensors map[string]sensorInfo `json:"sensors"`
+	Descriptions map[string]string     `json:"descriptions"`
+	Sensors      map[string]sensorInfo `json:"sensors"`
 }
 
 type sensorInfo struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"displayName"`
-	Attributes map[string]float64 `json:"attributes"`
+	Name        string             `json:"name"`
+	DisplayName string             `json:"displayName"`
+	Attributes  map[string]float64 `json:"attributes"`
 }
 
 type Attribute struct {
-	Name 		string
-	Description	string
-	Value		float64
+	Name        string
+	Description string
+	Value       float64
 }
 
 type Sensor struct {
-	ID 			string
+	ID          string
 	Name        string
 	DisplayName string
-	Attributes	[]Attribute
+	Attributes  []Attribute
 }
 
 // GetSensors returns the list of devices from smartthings using

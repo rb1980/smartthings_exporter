@@ -103,8 +103,8 @@ func (g *Auth) FetchOAuthToken() (*oauth2.Token, error) {
 	mux.HandleFunc(rootPath, g.handleMain)
 	mux.HandleFunc(donePath, g.handleDone)
 	mux.HandleFunc(callbackPath, g.handleOAuthCallback)
-	srv := &http.Server {
-		Addr: ":"+strconv.Itoa(g.port),
+	srv := &http.Server{
+		Addr:    ":" + strconv.Itoa(g.port),
 		Handler: mux,
 	}
 
