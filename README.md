@@ -19,10 +19,29 @@ $ go get -u github.com/kadaan/smartthings_exporter
 
 Before you can use Smartthings_exporter, you need to register it with SmartThings.  
 
-The first step is to setup the API that Smartthings_exporter uses to communicate with SmartThings.  Follow the 
-[GoSmart Smartthings API setup](https://github.com/kadaan/gosmart#smartthings-api-setup) steps.
+The first step is to setup the API that Smartthings_exporter uses to communicate with SmartThings.  To do this you need to:
 
-Take note of the `client_id` and `client_secret` of your SmartThings app that you just created.
+1. Navigate to the [SmartThings API website](https://graph.api.smartthings.com/). Register a new account (or login if you already have an account).
+2. Once logged in, click on My SmartApps. This will show a list of the current SmartApps installed (it could be blank for new accounts).
+3. Click the `Settings` button at the top right.
+4. Click the `Add new repository` link at the bottom of the settings dialog box.
+5. In the new row fill in:
+    1. Owner: `kadaan`
+    2. Name: `smartthings_exporter`
+    3. Branch: `master`
+6. Press `Save`
+7. Click `Update from Repo` at the top right
+8. Choose `smartthings_exporter (master)`
+9. Under the `New` list on the right check `smartapps/kadaan/smartthings-exporter-api.src/smartthings-exporter-api.groovy`
+10. Check `Publish` at the bottom
+11. Click `Execute Update`
+12. Click the `Edit Properties` button for the `kadaan : Smartthings Exporter API` entry
+13. Click `OAuth`
+14. Click `Enable OAuth in SmartApp`
+15. In `Redirect URI`, enter `http://localhost:4567/OAuthCallback`. _Case is important here_
+16. Click `Update`
+17. Click `OAuth`
+18. Take note of the `Client ID` and `Client Secret`. These will be used to authenticate and retrieve a token. Once the token is saved locally by the library, authentication can proceed without user intervention.
 
 ### Smartthings_exporter configuration
 
