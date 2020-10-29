@@ -63,97 +63,97 @@ def Map getAttributeMappings() {
             description: "0 if the alarm is clear.",
             conversion: this.&valueClear
         ],
-    	"battery": [
+        "battery": [
         	name: "battery_percentage",
             description: "Percentage of battery remaining.",
             conversion: this.&valueFloat
         ],
-		"carbonMonoxide" : [
+        "carbonMonoxide" : [
             name: "carbon_monoxide_detected",
             description: "1 if the carbon monoxide is detected.",
             conversion: this.&valueClear
         ],
-		"colorTemperature" : [
+        "colorTemperature" : [
             name: "color_temperature_kelvins",
             description: "Light color temperature.",
             conversion: this.&valueFloat
         ],
-		"contact" : [
+        "contact" : [
             name: "contact_closed",
             description: "1 if the contact is closed.",
             conversion: this.&valueOpenClosed
         ],
-		"energy" : [
+        "energy" : [
             name: "energy_usage_joules",
             description: "Energy usage in joules.",
             conversion: this.&valueJoules
         ],
-		"humidity" : [
+        "humidity" : [
             name: "relative_humidity_percentage",
             description: "Current relative humidity percentage.",
             conversion: this.&valueFloat
         ],
-		"hue" : [
+        "hue" : [
             name: "color_hue_percentage",
             description: "Light color hue percentage.",
             conversion: this.&valueFloat
         ],
-		"hvac_state" : [
+        "hvac_state" : [
             name: "hvac_on",
             description: "1 if the HVAC is on.",
             conversion: this.&valueOnOff
         ],
-		"illuminance" : [
+        "illuminance" : [
             name: "illuminance_lux",
             description: "Light illuminance in lux.",
             conversion: this.&valueFloat
         ],
-		"level" : [
+        "level" : [
             name: "level",
             description: "Level as a percentage.",
             conversion: this.&valueFloat
         ],
-		"motion" : [
+        "motion" : [
             name: "motion_detected",
             description: "1 if motion is detected.",
             conversion: this.&valueInactiveActive
         ],
-		"power" : [
+        "power" : [
             name: "power_usage_watts",
             description: "Current power usage in watts.",
             conversion: this.&valueFloat
         ],
-		"presence" : [
+        "presence" : [
             name: "presence_detected",
             description: "1 if presence is detected.",
             conversion: this.&valueAbsentPresent
         ],
-		"saturation" : [
+        "saturation" : [
             name: "color_saturation_percentage",
             description: "Light color saturation percentage.",
             conversion: this.&valueFloat
         ],
-		"smoke" : [
+        "smoke" : [
             name: "smoke_detected",
             description: "1 if smoke is detected.",
             conversion: this.&valueClear
         ],
-		"switch" : [
+        "switch" : [
             name: "switch_enabled",
             description: "1 if the switch is on.",
             conversion: this.&valueOnOff
         ],
-		"tamper" : [
+        "tamper" : [
             name: "tamper_sensor_clear",
             description: "1 if the tamper sensor is clear.",
             conversion: this.&valueClear
         ],
-		"temperature" : [
+        "temperature" : [
             name: "temperature_fahrenheit",
             description: "Temperature in fahrenheit.",
             conversion: this.&valueFloat
         ],
-		"voltage" : [
+        "voltage" : [
             name: "voltage_volts",
             description: "Energy voltage in Volts.",
             conversion: this.&valueFloat
