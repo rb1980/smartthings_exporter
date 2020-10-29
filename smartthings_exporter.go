@@ -21,7 +21,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kadaan/gosmart"
+	"github.com/kadaan/smartthingg_exporter/gosmart"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	plog "github.com/prometheus/common/log"
@@ -54,91 +54,7 @@ var (
 	monitorOAuthClient    *string
 	monitorOAuthTokenFile *string
 
-	invalidMetric     = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "smartthings_invalid_metric",
-			Help: "Total number of metrics that were invalid.",
-		},
-	)
-	metrics = map[string]*prometheus.Desc{
-		"alarmState": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "alarm_cleared"), "0 if the alarm is clear.",
-			[]string{"id", "name"}, nil),
-
-		"battery": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "battery_percentage"),
-			"Percentage of battery remaining.", []string{"id", "name"}, nil),
-
-		"carbonMonoxide": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "contact_closed"),
-			"1 if the contact is closed.", []string{"id", "name"}, nil),
-
-		"colorTemperature": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "color_temperature_kelvins"),
-			"Light color temperature.", []string{"id", "name"}, nil),
-
-		"contact": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "contact_closed"),
-			"1 if the contact is closed.", []string{"id", "name"}, nil),
-
-		"energy": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "energy_usage_joules"),
-			"Energy usage in joules.", []string{"id", "name"}, nil),
-
-		"humidity": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "relative_humidity_percentage"),
-			"Current relative humidity percentage.", []string{"id", "name"}, nil),
-
-		"hue": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "color_hue_percentage"),
-			"Light color hue percentage.", []string{"id", "name"}, nil),
-
-		"hvac_state": prometheus.NewDesc(prometheus.BuildFQName(namespace, "", "hvac_on"),
-			"1 if the HVAC is on.", []string{"id", "name"}, nil),
-
-		"illuminance": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "illuminance_lux"),
-			"Light illuminance in lux.", []string{"id", "name"}, nil),
-
-		"level": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "level"),
-			"Level as a percentage.", []string{"id", "name"}, nil),
-
-		"motion": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "motion_detected"),
-			"1 if motion is detected.", []string{"id", "name"}, nil),
-
-		"power": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "power_usage_watts"),
-			"Current power usage in watts.", []string{"id", "name"}, nil),
-
-		"presence": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "presence_detected"),
-			"1 if presence is detected.", []string{"id", "name"}, nil),
-
-		"saturation": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "color_saturation_percentage"),
-			"Light color saturation percentage.", []string{"id", "name"}, nil),
-
-		"smoke": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "smoke_detected"), "1 if smoke is detected.",
-			[]string{"id", "name"}, nil),
-
-		"switch": prometheus.NewDesc(prometheus.BuildFQName(namespace, "", "switch_enabled"),
-			"1 if the switch is on.", []string{"id", "name"}, nil),
-
-		"tamper": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "tamper_sensor_clear"),
-			"1 if the tamper sensor is clear.", []string{"id", "name"}, nil),
-
-		"temperature": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "temperature_fahrenheit"),
-			"Temperature in fahrenheit.", []string{"id", "name"}, nil),
-
-		"voltage": prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "voltage_volts"),
-			"Energy voltage in Volts.", []string{"id", "name"}, nil),
-	}
+	metrics = map[string]*prometheus.Desc{}
 )
 
 // Exporter collects smartthings stats and exports them using the prometheus metrics package.
@@ -160,7 +76,7 @@ func NewExporter(oauthClient string, oauthToken *oauth2.Token) (*Exporter, error
 		plog.Fatalf("Error reading endpoints URI: %v\n", err)
 	}
 
-	_, verr := gosmart.GetDevices(client, endpoint)
+	_, verr := gosmart.GetSensors(client, endpoint)
 	if verr != nil {
 		plog.Fatalf("Error verifying connection to endpoints URI %v: %v\n", endpoint, err)
 	}
@@ -184,26 +100,20 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 // as Prometheus metrics. It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	// Iterate over all devices and collect timeseries info.
-	devs, err := gosmart.GetDevices(e.client, e.endpoint)
+	sensors, err := gosmart.GetSensors(e.client, e.endpoint)
 	if err != nil {
-		plog.Errorf("Error reading list of devices from %v: %v\n", e.endpoint, err)
+		plog.Errorf("Error reading list of sensors from %v: %v\n", e.endpoint, err)
 	}
 
-	for _, dev := range devs {
-		for k, val := range dev.Attributes {
-			if val == nil {
-				val = ""
+	for _, sensor := range sensors {
+		for _, val := range sensor.Attributes {
+			if _, ok := metrics[val.Name]; !ok {
+				metric := prometheus.NewDesc(
+					prometheus.BuildFQName(namespace, "", val.Name),
+					val.Description, []string{"id", "name"}, nil)
+				metrics[val.Name] = metric
 			}
-			metric := metrics[k]
-			if metric == nil {
-				continue
-			}
-			if value, ok := val.(float64); ok {
-				ch <- prometheus.MustNewConstMetric(metric, prometheus.GaugeValue, value, dev.ID, dev.DisplayName)
-			} else {
-				invalidMetric.Inc()
-				plog.Errorf("Cannot process sensor data for %s (%v): %v", k, val, err)
-			}
+			ch <- prometheus.MustNewConstMetric(metrics[val.Name], prometheus.GaugeValue, val.Value, sensor.ID, sensor.DisplayName)
 		}
 	}
 }
@@ -288,7 +198,6 @@ func monitor(_ *kingpin.ParseContext) error {
 		return err
 
 	}
-	prometheus.MustRegister(invalidMetric)
 	prometheus.MustRegister(exporter)
 
 	http.Handle(*metricsPath, promhttp.Handler())
