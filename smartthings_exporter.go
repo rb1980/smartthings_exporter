@@ -21,17 +21,19 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kadaan/gosmart"
+	"github.com/kadaan/smartthingg_exporter/gosmart"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	plog "github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
+	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"net/http"
 	"os"
 	"path/filepath"
+	"syscall"
 )
 
 const (
@@ -44,7 +46,6 @@ var (
 	registerCommand        *kingpin.CmdClause
 	registerPort           *uint16
 	registerOAuthClient    *string
-	registerOAuthSecret    *string
 	registerOAuthTokenFile **os.File
 
 	monitorCommand        *kingpin.CmdClause
@@ -53,123 +54,8 @@ var (
 	monitorOAuthClient    *string
 	monitorOAuthTokenFile *string
 
-	valOpenClosed     = []string{"open", "closed"}
-	valInactiveActive = []string{"inactive", "active"}
-	valAbsentPresent  = []string{"not present", "present"}
-	valOffOn          = []string{"off", "on"}
-	invalidMetric     = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "smartthings_invalid_metric",
-			Help: "Total number of metrics that were invalid.",
-		},
-	)
-	metrics = map[string]*metric{
-		"alarmState": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "alarm_cleared"), "0 if the alarm is clear.",
-			[]string{"id", "name"}, nil), valueClear},
-
-		"battery": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "battery_percentage"),
-			"Percentage of battery remaining.", []string{"id", "name"}, nil), valueFloat},
-
-		"carbonMonoxide": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "contact_closed"),
-			"1 if the contact is closed.", []string{"id", "name"}, nil), valueClear},
-
-		"colorTemperature": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "color_temperature_kelvins"),
-			"Light color temperature.", []string{"id", "name"}, nil), valueFloat},
-
-		"contact": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "contact_closed"),
-			"1 if the contact is closed.", []string{"id", "name"}, nil),
-			func(i interface{}) (f float64, e error) {
-				return valueOneOf(i, valOpenClosed)
-			}},
-
-		"energy": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "energy_usage_joules"),
-			"Energy usage in joules.", []string{"id", "name"}, nil),
-			func(i interface{}) (f float64, e error) {
-				value, err := valueFloat(i)
-				if err != nil {
-					return 0, err
-				}
-				return value * 3600000, err
-			}},
-
-		"humidity": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "relative_humidity_percentage"),
-			"Current relative humidity percentage.", []string{"id", "name"}, nil), valueFloat},
-
-		"hue": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "color_hue_percentage"),
-			"Light color hue percentage.", []string{"id", "name"}, nil), valueFloat},
-
-		"hvac_state": {prometheus.NewDesc(prometheus.BuildFQName(namespace, "", "hvac_on"),
-			"1 if the HVAC is on.", []string{"id", "name"}, nil),
-			func(i interface{}) (f float64, e error) {
-				return valueOneOf(i, valOffOn)
-			}},
-
-		"illuminance": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "illuminance_lux"),
-			"Light illuminance in lux.", []string{"id", "name"}, nil), valueFloat},
-
-		"level": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "level"),
-			"Level as a percentage.", []string{"id", "name"}, nil), valueFloat},
-
-		"motion": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "motion_detected"),
-			"1 if motion is detected.", []string{"id", "name"}, nil),
-			func(i interface{}) (f float64, e error) {
-				return valueOneOf(i, valInactiveActive)
-			}},
-
-		"power": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "power_usage_watts"),
-			"Current power usage in watts.", []string{"id", "name"}, nil), valueFloat},
-
-		"presence": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "presence_detected"),
-			"1 if presence is detected.", []string{"id", "name"}, nil),
-			func(i interface{}) (f float64, e error) {
-				return valueOneOf(i, valAbsentPresent)
-			}},
-
-		"saturation": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "color_saturation_percentage"),
-			"Light color saturation percentage.", []string{"id", "name"}, nil), valueFloat},
-
-		"smoke": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "smoke_detected"), "1 if smoke is detected.",
-			[]string{"id", "name"}, nil), valueClear},
-
-		"switch": {prometheus.NewDesc(prometheus.BuildFQName(namespace, "", "switch_enabled"),
-			"1 if the switch is on.", []string{"id", "name"}, nil),
-			func(i interface{}) (f float64, e error) {
-				return valueOneOf(i, valOffOn)
-			}},
-
-		"tamper": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "tamper_sensor_clear"),
-			"1 if the tamper sensor is clear.", []string{"id", "name"}, nil), valueClear},
-
-		"temperature": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "temperature_fahrenheit"),
-			"Temperature in fahrenheit.", []string{"id", "name"}, nil), valueFloat},
-
-		"voltage": {prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "", "voltage_volts"),
-			"Energy voltage in Volts.", []string{"id", "name"}, nil), valueFloat},
-	}
+	metrics = map[string]*prometheus.Desc{}
 )
-
-type metric struct {
-	description *prometheus.Desc
-	valueMapper func(interface{}) (float64, error)
-}
 
 // Exporter collects smartthings stats and exports them using the prometheus metrics package.
 type Exporter struct {
@@ -190,7 +76,7 @@ func NewExporter(oauthClient string, oauthToken *oauth2.Token) (*Exporter, error
 		plog.Fatalf("Error reading endpoints URI: %v\n", err)
 	}
 
-	_, verr := gosmart.GetDevices(client, endpoint)
+	_, verr := gosmart.GetSensors(client, endpoint)
 	if verr != nil {
 		plog.Fatalf("Error verifying connection to endpoints URI %v: %v\n", endpoint, err)
 	}
@@ -206,7 +92,7 @@ func NewExporter(oauthClient string, oauthToken *oauth2.Token) (*Exporter, error
 // implements prometheus.Collector.
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	for _, m := range metrics {
-		ch <- m.description
+		ch <- m
 	}
 }
 
@@ -214,76 +100,22 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 // as Prometheus metrics. It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	// Iterate over all devices and collect timeseries info.
-	devs, err := gosmart.GetDevices(e.client, e.endpoint)
+	sensors, err := gosmart.GetSensors(e.client, e.endpoint)
 	if err != nil {
-		plog.Errorf("Error reading list of devices from %v: %v\n", e.endpoint, err)
+		plog.Errorf("Error reading list of sensors from %v: %v\n", e.endpoint, err)
 	}
 
-	for _, dev := range devs {
-		for k, val := range dev.Attributes {
-			if val == nil {
-				val = ""
+	for _, sensor := range sensors {
+		for _, val := range sensor.Attributes {
+			if _, ok := metrics[val.Name]; !ok {
+				metric := prometheus.NewDesc(
+					prometheus.BuildFQName(namespace, "", val.Name),
+					val.Description, []string{"id", "name"}, nil)
+				metrics[val.Name] = metric
 			}
-			var value float64
-			//var metricDesc *prometheus.Desc
-			metric := metrics[k]
-			if metric == nil {
-				continue
-			}
-			value, err = metric.valueMapper(val)
-			if err == nil {
-				ch <- prometheus.MustNewConstMetric(metric.description, prometheus.GaugeValue, value, dev.ID, dev.DisplayName)
-			} else {
-				invalidMetric.Inc()
-				plog.Errorf("Cannot process sensor data for %s (%v): %v", k, val, err)
-			}
+			ch <- prometheus.MustNewConstMetric(metrics[val.Name], prometheus.GaugeValue, val.Value, sensor.ID, sensor.DisplayName)
 		}
 	}
-}
-
-// valueClear expects a string and returns 0 for "clear", 1 for anything else.
-// TODO: Expand this to properly identify non-clear conditions and return error
-// in case an unexpected value is found.
-func valueClear(v interface{}) (float64, error) {
-	val, ok := v.(string)
-	if !ok {
-		return 0.0, fmt.Errorf("invalid non-string argument %v", v)
-	}
-	if val == "clear" {
-		return 0.0, nil
-	}
-	return 1.0, nil
-}
-
-// valueOneOf returns 0.0 if the value matches the first item
-// in the array, 1.0 if it matches the second, and an error if
-// nothing matches.
-func valueOneOf(v interface{}, options []string) (float64, error) {
-	val, ok := v.(string)
-	if !ok {
-		return 0.0, fmt.Errorf("invalid non-string argument %v", v)
-	}
-	if val == options[0] {
-		return 0.0, nil
-	}
-	if val == options[1] {
-		return 1.0, nil
-	}
-	return 0.0, fmt.Errorf("invalid option %q. Expected %q or %q", val, options[0], options[1])
-}
-
-// valueFloat returns the float64 value of the value passed or
-// error if the value cannot be converted.
-func valueFloat(v interface{}) (float64, error) {
-	stringVal, ok := v.(string)
-	if ok && stringVal == "" {
-		return 0.0, nil
-	}
-	val, ok := v.(float64)
-	if !ok {
-		return 0.0, fmt.Errorf("invalid non floating-point argument %v", v)
-	}
-	return val, nil
 }
 
 func init() {
@@ -292,7 +124,6 @@ func init() {
 	registerCommand = application.Command("register", "Register smartthings_exporter with Smartthings and outputs the token.").Action(register)
 	registerPort = registerCommand.Flag("register.listen-port", "The port to listen on for the OAuth register.").Default("4567").Uint16()
 	registerOAuthClient = registerCommand.Flag("smartthings.oauth-client", "Smartthings OAuth client ID.").Required().String()
-	registerOAuthSecret = registerCommand.Flag("smartthings.oauth-secret", "Smartthings OAuth secret key.").Required().String()
 
 	monitorCommand = application.Command("start", "Start the smartthings_exporter.").Default().Action(monitor)
 	listenAddress = monitorCommand.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Default(":9499").String()
@@ -313,7 +144,14 @@ func main() {
 
 func register(_ *kingpin.ParseContext) error {
 	_, _ = fmt.Fprintln(os.Stderr, "Registering smartthings_exporter with Smartthings")
-	config := gosmart.NewOAuthConfig(*registerOAuthClient, *registerOAuthSecret)
+	_, _ = fmt.Fprintln(os.Stderr, "Enter your Smartthings OAuth secret:")
+	bytes, err := terminal.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "Failed to get Smartthings OAuth secret.")
+		return err
+	}
+
+	config := gosmart.NewOAuthConfig(*registerOAuthClient, string(bytes))
 	gst, err := gosmart.NewAuth(int(*registerPort), config)
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, "Failed to create Smartthings OAuth client.")
@@ -360,7 +198,6 @@ func monitor(_ *kingpin.ParseContext) error {
 		return err
 
 	}
-	prometheus.MustRegister(invalidMetric)
 	prometheus.MustRegister(exporter)
 
 	http.Handle(*metricsPath, promhttp.Handler())
