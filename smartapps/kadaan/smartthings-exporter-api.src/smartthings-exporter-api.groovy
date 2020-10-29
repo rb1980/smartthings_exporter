@@ -32,7 +32,7 @@ preferences {
     paragraph "Select the sensors you want the API to have access to."
   }
   section() {
-  	input "sensors", "capability.sensor", multiple: true, title: "Which sensors?", required: true
+    input "sensors", "capability.sensor", multiple: true, title: "Which sensors?", required: true
   }
 }
 
@@ -57,14 +57,14 @@ mappings {
 }
 
 def Map getAttributeMappings() {
-	return [
+    return [
         "alarmState" : [
             name: "alarm_cleared",
             description: "0 if the alarm is clear.",
             conversion: this.&valueClear
         ],
         "battery": [
-        	name: "battery_percentage",
+            name: "battery_percentage",
             description: "Percentage of battery remaining.",
             conversion: this.&valueFloat
         ],
@@ -166,7 +166,7 @@ def listSensors() {
     def descriptions = [:]
     def metrics = [:]
     sensors.each {
-    	def sensor = it
+        def sensor = it
         def metricDescriptions = [:]
         def metric = [:]
         def metricAttributes = [:]
@@ -178,9 +178,9 @@ def listSensors() {
             }
         }
         if (metricAttributes.size() > 0) {
-        	["name", "displayName"].each {
-            	metric[it] = sensor."$it"
-        	}
+            ["name", "displayName"].each {
+                metric[it] = sensor."$it"
+            }
             metric.attributes = metricAttributes
             descriptions = descriptions << metricDescriptions
             metrics[sensor.id] = metric
@@ -190,53 +190,53 @@ def listSensors() {
 }
 
 private valueClear(value) {
-	if (!value?.trim() || value?.trim().toString() == "clear") {
-		return 0.0
-	}
+    if (!value?.trim() || value?.trim().toString() == "clear") {
+        return 0.0
+    }
     return 1.0
 }
 
 private valueFloat(value) {
-	if (!value) {
-    	return 0.0
+    if (!value) {
+        return 0.0
     }
     try {
-      	float f = Float.valueOf(value).floatValue();
-      	return f
+        float f = Float.valueOf(value).floatValue();
+        return f
     } catch (NumberFormatException nfe) {
-      	return 0.0
+        return 0.0
     }
 }
 
 private valueOneOf(value, options) {
-	if (!value?.trim()) {
-    	return 0.0
+    if (!value?.trim()) {
+        return 0.0
     }
-	if (value?.trim() == options[0]) {
-		return 0.0
-	}
-	if (value?.trim() == options[1]) {
-		return 1.0
-	}
-	return 0.0
+    if (value?.trim() == options[0]) {
+        return 0.0
+    }
+    if (value?.trim() == options[1]) {
+        return 1.0
+    }
+    return 0.0
 }
 
 private valueOnOff(value) {
-	return valueOneOf(value, ["off", "on"])
+    return valueOneOf(value, ["off", "on"])
 }
 
 private valueOpenClosed(value) {
-	return valueOneOf(value, ["open", "closed"])
+    return valueOneOf(value, ["open", "closed"])
 }
 
 private valueAbsentPresent(value) {
-	return valueOneOf(value, ["not present", "present"])
+    return valueOneOf(value, ["not present", "present"])
 }
 
 private valueInactiveActive(value) {
-	return valueOneOf(value, ["inactive", "active"])
+    return valueOneOf(value, ["inactive", "active"])
 }
 
 private valueJoules(value) {
-	return valueFloat(value) * 3600000
+    return valueFloat(value) * 3600000
 }
