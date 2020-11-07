@@ -145,7 +145,7 @@ def Map getAttributeMappings() {
         ],
         "tamper" : [
             name: "tamper_sensor_clear",
-            description: "1 if the tamper sensor is clear.",
+            description: "0 if the tamper sensor is clear.",
             conversion: this.&valueClear
         ],
         "temperature" : [
