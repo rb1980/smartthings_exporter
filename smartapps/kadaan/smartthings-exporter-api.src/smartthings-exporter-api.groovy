@@ -32,7 +32,9 @@ preferences {
     paragraph "Select the sensors you want the API to have access to."
   }
   section() {
-    input "sensors", "capability.sensor", multiple: true, title: "Which sensors?", required: true
+    input "sensors", "capability.sensor", multiple: true, title: "Which sensors?", required: false
+    input "actuators", "capability.actuator", multiple: true, title: "Which actuators?", required: false
+    input "switches", "capability.switch", multiple: true, title: "Which switches?", required: false
   }
 }
 
@@ -58,123 +60,175 @@ mappings {
 
 def Map getAttributeMappings() {
     return [
-        "alarmState" : [
-            name: "alarm_cleared",
-            description: "0 if the alarm is clear.",
-            conversion: this.&valueClear
+    	"Alarm" : [
+            "alarmState" : [
+                name: "alarm_cleared",
+                description: "0 if the alarm is clear.",
+                conversion: this.&valueClear
+            ]
         ],
-        "battery": [
-            name: "battery_percentage",
-            description: "Percentage of battery remaining.",
-            conversion: this.&valueFloat
+        "Battery" : [
+            "battery": [
+                name: "battery_percentage",
+                description: "Percentage of battery remaining.",
+                conversion: this.&valueFloat
+            ]
         ],
-        "carbonMonoxide" : [
-            name: "carbon_monoxide_detected",
-            description: "1 if the carbon monoxide is detected.",
-            conversion: this.&valueClear
+        "Carbon Monoxide Detector" : [
+            "carbonMonoxide" : [
+                name: "carbon_monoxide_detected",
+                description: "1 if the carbon monoxide is detected.",
+                conversion: this.&valueClear
+            ]
         ],
-        "colorTemperature" : [
-            name: "color_temperature_kelvins",
-            description: "Light color temperature.",
-            conversion: this.&valueFloat
+        "Color Temperature" : [
+            "colorTemperature" : [
+                name: "color_temperature_kelvins",
+                description: "Light color temperature.",
+                conversion: this.&valueFloat
+            ]
         ],
-        "contact" : [
-            name: "contact_closed",
-            description: "1 if the contact is closed.",
-            conversion: this.&valueOpenClosed
+        "Contact Sensor" : [
+            "contact" : [
+                name: "contact_closed",
+                description: "1 if the contact is closed.",
+                conversion: this.&valueOpenClosed
+            ]
         ],
-        "energy" : [
-            name: "energy_usage_joules",
-            description: "Energy usage in joules.",
-            conversion: this.&valueJoules
+        "Energy Meter" : [
+            "energy" : [
+                name: "energy_usage_joules",
+                description: "Energy usage in joules.",
+                conversion: this.&valueJoules
+            ]
         ],
-        "humidity" : [
-            name: "relative_humidity_percentage",
-            description: "Current relative humidity percentage.",
-            conversion: this.&valueFloat
+        "Relative Humidity Measurement" : [
+            "humidity" : [
+                name: "relative_humidity_percentage",
+                description: "Current relative humidity percentage.",
+                conversion: this.&valueFloat
+            ]
         ],
-        "hue" : [
-            name: "color_hue_percentage",
-            description: "Light color hue percentage.",
-            conversion: this.&valueFloat
+        "Color Control" : [
+            "hue" : [
+                name: "color_hue_percentage",
+                description: "Light color hue percentage.",
+                conversion: this.&valueFloat
+            ],
+            "saturation" : [
+                name: "color_saturation_percentage",
+                description: "Light color saturation percentage.",
+                conversion: this.&valueFloat
+            ]
         ],
-        "hvac_state" : [
-            name: "hvac_on",
-            description: "1 if the HVAC is on.",
-            conversion: this.&valueOnOff
+        "Illuminance Measurement" : [
+            "illuminance" : [
+                name: "illuminance_lux",
+                description: "Light illuminance in lux.",
+                conversion: this.&valueFloat
+            ]
         ],
-        "illuminance" : [
-            name: "illuminance_lux",
-            description: "Light illuminance in lux.",
-            conversion: this.&valueFloat
+        "Switch Level" : [
+            "level" : [
+                name: "level",
+                description: "Level as a percentage.",
+                conversion: this.&valueFloat
+            ]
         ],
-        "level" : [
-            name: "level",
-            description: "Level as a percentage.",
-            conversion: this.&valueFloat
+        "Motion Sensor" : [
+            "motion" : [
+                name: "motion_detected",
+                description: "1 if motion is detected.",
+                conversion: this.&valueInactiveActive
+            ]
         ],
-        "motion" : [
-            name: "motion_detected",
-            description: "1 if motion is detected.",
-            conversion: this.&valueInactiveActive
+        "Power Meter" : [
+            "power" : [
+                name: "power_usage_watts",
+                description: "Current power usage in watts.",
+                conversion: this.&valueFloat
+            ]
         ],
-        "power" : [
-            name: "power_usage_watts",
-            description: "Current power usage in watts.",
-            conversion: this.&valueFloat
+        "Presence Sensor" : [
+            "presence" : [
+                name: "presence_detected",
+                description: "1 if presence is detected.",
+                conversion: this.&valueAbsentPresent
+            ]
         ],
-        "presence" : [
-            name: "presence_detected",
-            description: "1 if presence is detected.",
-            conversion: this.&valueAbsentPresent
+        "Smoke Detector" : [
+            "smoke" : [
+                name: "smoke_detected",
+                description: "1 if smoke is detected.",
+                conversion: this.&valueClear
+            ]
         ],
-        "saturation" : [
-            name: "color_saturation_percentage",
-            description: "Light color saturation percentage.",
-            conversion: this.&valueFloat
+        "Switch" : [
+            "switch" : [
+                name: "switch_enabled",
+                description: "1 if the switch is on.",
+                conversion: this.&valueOnOff
+            ]
         ],
-        "smoke" : [
-            name: "smoke_detected",
-            description: "1 if smoke is detected.",
-            conversion: this.&valueClear
+        "Tamper Alert" : [
+            "tamper" : [
+                name: "tamper_sensor_clear",
+                description: "0 if the tamper sensor is clear.",
+                conversion: this.&valueClear
+            ]
         ],
-        "switch" : [
-            name: "switch_enabled",
-            description: "1 if the switch is on.",
-            conversion: this.&valueOnOff
+        "Temperature Measurement" : [
+            "temperature" : [
+                name: "temperature_fahrenheit",
+                description: "Temperature in fahrenheit.",
+                conversion: this.&valueFloat
+            ]
         ],
-        "tamper" : [
-            name: "tamper_sensor_clear",
-            description: "0 if the tamper sensor is clear.",
-            conversion: this.&valueClear
-        ],
-        "temperature" : [
-            name: "temperature_fahrenheit",
-            description: "Temperature in fahrenheit.",
-            conversion: this.&valueFloat
-        ],
-        "voltage" : [
-            name: "voltage_volts",
-            description: "Energy voltage in Volts.",
-            conversion: this.&valueFloat
+        "Voltage Measurement" : [
+            "voltage" : [
+                name: "voltage_volts",
+                description: "Energy voltage in Volts.",
+                conversion: this.&valueFloat
+            ]
         ]
     ]
 }
 
 def listSensors() {
+    def start = new Date()
     def attributeMappings = getAttributeMappings()
     def descriptions = [:]
     def metrics = [:]
+    def devices = [:]
+    actuators.each {
+      devices[it.id] = it
+    }
     sensors.each {
-        def sensor = it
+      if(!devices.containsKey(it.id)) {
+        devices[it.id] = it
+      }
+    }
+    switches.each {
+      if(!devices.containsKey(it.id)) {
+        devices[it.id] = it
+      }
+    }
+    devices.each {
+        def sensor = it.value
         def metricDescriptions = [:]
         def metric = [:]
         def metricAttributes = [:]
-        attributeMappings.each {
-            def currentValue = sensor.currentValue(it.key)
-            if (currentValue) {
-                metricDescriptions[it.value.name] = it.value.description
-                metricAttributes[it.value.name] = it.value.conversion(currentValue)
+        def supportedCapabilities = sensor.capabilities
+        supportedCapabilities.each {
+        	if (attributeMappings.containsKey(it.name)) {
+	            def attributeMapping = attributeMappings.get(it.name)
+            	attributeMapping.each {
+                    def currentValue = sensor.currentValue(it.key)
+                    if (currentValue) {
+                        metricDescriptions[it.value.name] = it.value.description
+                        metricAttributes[it.value.name] = it.value.conversion(currentValue)
+                    }
+                }
             }
         }
         if (metricAttributes.size() > 0) {
@@ -186,6 +240,8 @@ def listSensors() {
             metrics[sensor.id] = metric
         }
     }
+    def end = new Date()
+    log.debug("${end.getTime() - start.getTime()}")
     [descriptions: descriptions, sensors: metrics]
 }
 
