@@ -48,6 +48,26 @@ def updated() {
 }
 
 def initialize() {
+	def devices = getDevices()
+    devices.each {
+        def device = it.value
+        def supportedCapabilities = device.capabilities
+        supportedCapabilities.each {
+        	if (attributeMappings.containsKey(it.name)) {
+	            def attributeMapping = attributeMappings.get(it.name)
+            	attributeMapping.each {
+                	if (it.value.type == "counter") {
+	                    state["${device.id}__${it.key}"] = 0
+                    	it.value.values.each {value ->
+                        	def eventName = "${it.key}.${value}"
+    						log.debug("Subscribing to ${eventName} for device ${device}")
+                    		subscribe(device, eventName, handleCounter)
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 mappings {
@@ -62,42 +82,48 @@ def Map getAttributeMappings() {
     return [
     	"Alarm" : [
             "alarmState" : [
-                name: "alarm_cleared",
-                description: "0 if the alarm is clear.",
-                conversion: this.&valueClear
+                name: "alarm_count",
+                type: "counter",
+                description: "Count of alarms.",
+                values: ["siren", "strobe", "both"]
             ]
         ],
         "Battery" : [
             "battery": [
                 name: "battery_percentage",
+                type: "gauge",
                 description: "Percentage of battery remaining.",
                 conversion: this.&valueFloat
             ]
         ],
         "Carbon Monoxide Detector" : [
             "carbonMonoxide" : [
-                name: "carbon_monoxide_detected",
-                description: "1 if the carbon monoxide is detected.",
-                conversion: this.&valueClear
+                name: "carbon_monoxide_detection_count",
+                type: "counter",
+                description: "Count of carbon monoxide detections.",
+                values: ["detected"]
             ]
         ],
         "Color Temperature" : [
             "colorTemperature" : [
                 name: "color_temperature_kelvins",
+                type: "gauge",
                 description: "Light color temperature.",
                 conversion: this.&valueFloat
             ]
         ],
         "Contact Sensor" : [
             "contact" : [
-                name: "contact_closed",
-                description: "1 if the contact is closed.",
-                conversion: this.&valueOpenClosed
+                name: "contact_opened_count",
+                type: "counter",
+                description: "Count of times contact was opened.",
+                values: ["open"]
             ]
         ],
         "Energy Meter" : [
             "energy" : [
                 name: "energy_usage_joules",
+                type: "gauge",
                 description: "Energy usage in joules.",
                 conversion: this.&valueJoules
             ]
@@ -105,6 +131,7 @@ def Map getAttributeMappings() {
         "Relative Humidity Measurement" : [
             "humidity" : [
                 name: "relative_humidity_percentage",
+                type: "gauge",
                 description: "Current relative humidity percentage.",
                 conversion: this.&valueFloat
             ]
@@ -112,11 +139,13 @@ def Map getAttributeMappings() {
         "Color Control" : [
             "hue" : [
                 name: "color_hue_percentage",
+                type: "gauge",
                 description: "Light color hue percentage.",
                 conversion: this.&valueFloat
             ],
             "saturation" : [
                 name: "color_saturation_percentage",
+                type: "gauge",
                 description: "Light color saturation percentage.",
                 conversion: this.&valueFloat
             ]
@@ -124,6 +153,7 @@ def Map getAttributeMappings() {
         "Illuminance Measurement" : [
             "illuminance" : [
                 name: "illuminance_lux",
+                type: "gauge",
                 description: "Light illuminance in lux.",
                 conversion: this.&valueFloat
             ]
@@ -131,55 +161,63 @@ def Map getAttributeMappings() {
         "Switch Level" : [
             "level" : [
                 name: "level",
+                type: "gauge",
                 description: "Level as a percentage.",
                 conversion: this.&valueFloat
             ]
         ],
         "Motion Sensor" : [
             "motion" : [
-                name: "motion_detected",
-                description: "1 if motion is detected.",
-                conversion: this.&valueInactiveActive
+                name: "motion_detection_count",
+                type: "counter",
+                description: "Count of motion detections.",
+                values: ["active"]
             ]
         ],
         "Power Meter" : [
             "power" : [
                 name: "power_usage_watts",
+                type: "gauge",
                 description: "Current power usage in watts.",
                 conversion: this.&valueFloat
             ]
         ],
         "Presence Sensor" : [
             "presence" : [
-                name: "presence_detected",
-                description: "1 if presence is detected.",
-                conversion: this.&valueAbsentPresent
+                name: "presence_detection_count",
+                type: "counter",
+                description: "Count of presence detections.",
+                values: ["present"]
             ]
         ],
         "Smoke Detector" : [
             "smoke" : [
-                name: "smoke_detected",
-                description: "1 if smoke is detected.",
-                conversion: this.&valueClear
+                name: "smoke_detection_count",
+                type: "counter",
+                description: "Count of smoke detections.",
+                values: ["detected"]
             ]
         ],
         "Switch" : [
             "switch" : [
                 name: "switch_enabled",
+                type: "gauge",
                 description: "1 if the switch is on.",
                 conversion: this.&valueOnOff
             ]
         ],
         "Tamper Alert" : [
             "tamper" : [
-                name: "tamper_sensor_clear",
-                description: "0 if the tamper sensor is clear.",
-                conversion: this.&valueClear
+                name: "tamper_detected_count",
+                type: "counter",
+                description: "Count of tamper detections.",
+                values: ["detected"]
             ]
         ],
         "Temperature Measurement" : [
             "temperature" : [
                 name: "temperature_fahrenheit",
+                type: "gauge",
                 description: "Temperature in fahrenheit.",
                 conversion: this.&valueFloat
             ]
@@ -187,6 +225,7 @@ def Map getAttributeMappings() {
         "Voltage Measurement" : [
             "voltage" : [
                 name: "voltage_volts",
+                type: "gauge",
                 description: "Energy voltage in Volts.",
                 conversion: this.&valueFloat
             ]
@@ -194,12 +233,53 @@ def Map getAttributeMappings() {
     ]
 }
 
+def handleCounter(evt) {
+	def stateId = "${evt.deviceId}__${evt.name}"
+	state[stateId] = state[stateId] + 1
+}
+
 def listSensors() {
-    def start = new Date()
     def attributeMappings = getAttributeMappings()
     def descriptions = [:]
     def metrics = [:]
-    def devices = [:]
+    def devices = getDevices()
+    devices.each {
+        def device = it.value
+        def metricDescriptions = [:]
+        def metric = [:]
+        def metricAttributes = [:]
+        def supportedCapabilities = device.capabilities
+        supportedCapabilities.each {
+        	if (attributeMappings.containsKey(it.name)) {
+	            def attributeMapping = attributeMappings.get(it.name)
+            	attributeMapping.each {
+                	if (it.value.type == "gauge") {
+                        def currentValue = device.currentValue(it.key)
+                        if (currentValue) {
+		                    metricDescriptions[it.value.name] = it.value.description
+                            metricAttributes[it.value.name] = it.value.conversion(currentValue)
+                        }
+                    } else if (it.value.type == "counter") {
+                        metricDescriptions[it.value.name] = it.value.description
+                        metricAttributes[it.value.name] = state["${device.id}__${it.key}"]
+                    }
+                }
+            }
+        }
+        if (metricAttributes.size() > 0) {
+            ["name", "displayName"].each {
+                metric[it] = device."$it"
+            }
+            metric.attributes = metricAttributes
+            descriptions = descriptions << metricDescriptions
+            metrics[device.id] = metric
+        }
+    }
+    [descriptions: descriptions, sensors: metrics]
+}
+
+private getDevices() {
+	def devices = [:]
     actuators.each {
       devices[it.id] = it
     }
@@ -213,43 +293,7 @@ def listSensors() {
         devices[it.id] = it
       }
     }
-    devices.each {
-        def sensor = it.value
-        def metricDescriptions = [:]
-        def metric = [:]
-        def metricAttributes = [:]
-        def supportedCapabilities = sensor.capabilities
-        supportedCapabilities.each {
-        	if (attributeMappings.containsKey(it.name)) {
-	            def attributeMapping = attributeMappings.get(it.name)
-            	attributeMapping.each {
-                    def currentValue = sensor.currentValue(it.key)
-                    if (currentValue) {
-                        metricDescriptions[it.value.name] = it.value.description
-                        metricAttributes[it.value.name] = it.value.conversion(currentValue)
-                    }
-                }
-            }
-        }
-        if (metricAttributes.size() > 0) {
-            ["name", "displayName"].each {
-                metric[it] = sensor."$it"
-            }
-            metric.attributes = metricAttributes
-            descriptions = descriptions << metricDescriptions
-            metrics[sensor.id] = metric
-        }
-    }
-    def end = new Date()
-    log.debug("${end.getTime() - start.getTime()}")
-    [descriptions: descriptions, sensors: metrics]
-}
-
-private valueClear(value) {
-    if (!value?.trim() || value?.trim().toString() == "clear") {
-        return 0.0
-    }
-    return 1.0
+    devices
 }
 
 private valueFloat(value) {
@@ -279,18 +323,6 @@ private valueOneOf(value, options) {
 
 private valueOnOff(value) {
     return valueOneOf(value, ["off", "on"])
-}
-
-private valueOpenClosed(value) {
-    return valueOneOf(value, ["open", "closed"])
-}
-
-private valueAbsentPresent(value) {
-    return valueOneOf(value, ["not present", "present"])
-}
-
-private valueInactiveActive(value) {
-    return valueOneOf(value, ["inactive", "active"])
 }
 
 private valueJoules(value) {
