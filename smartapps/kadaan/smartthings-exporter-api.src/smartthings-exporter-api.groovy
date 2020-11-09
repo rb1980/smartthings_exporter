@@ -255,7 +255,7 @@ def listSensors() {
             	attributeMapping.each {
                 	if (it.value.type == "gauge") {
                         def currentValue = device.currentValue(it.key)
-                        if (currentValue) {
+                        if (currentValue != null) {
 		                    metricDescriptions[it.value.name] = it.value.description
                             metricAttributes[it.value.name] = it.value.conversion(currentValue)
                         }
