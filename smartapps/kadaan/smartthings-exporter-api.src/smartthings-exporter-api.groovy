@@ -182,11 +182,19 @@ def Map getAttributeMappings() {
                 conversion: this.&valueFloat
             ]
         ],
+        //"Motion Sensor" : [
+        //    "motion" : [
+        //        name: "motion_detection_count",
+        //        type: "counter",
+        //        description: "Count of motion detections.",
+        //        values: ["active"]
+        //    ]
+        //],
         "Motion Sensor" : [
             "motion" : [
-                name: "motion_detection_count",
-                type: "counter",
-                description: "Count of motion detections.",
+                name: "motion_state",
+                type: "gauge",
+                description: "1 if motion detected.",
                 values: ["active"]
             ]
         ],
