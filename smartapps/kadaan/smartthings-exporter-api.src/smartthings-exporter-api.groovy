@@ -195,7 +195,7 @@ def Map getAttributeMappings() {
                 name: "motion_state",
                 type: "gauge",
                 description: "1 if motion detected.",
-                values: ["active"]
+                values: this.&valueOnOff
             ]
         ],
         "Power Meter" : [
