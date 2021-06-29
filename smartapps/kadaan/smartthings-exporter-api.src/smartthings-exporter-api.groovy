@@ -48,26 +48,26 @@ def updated() {
 }
 
 def initialize() {
-	def devices = getDevices()
-    devices.each {
-        def device = it.value
-        def supportedCapabilities = device.capabilities
-        supportedCapabilities.each {
-        	if (attributeMappings.containsKey(it.name)) {
-	            def attributeMapping = attributeMappings.get(it.name)
-            	attributeMapping.each {
-                	if (it.value.type == "counter") {
-	                    state["${device.id}__${it.key}"] = 0
-                    	it.value.values.each {value ->
-                        	def eventName = "${it.key}.${value}"
-    						log.debug("Subscribing to ${eventName} for device ${device}")
-                    		subscribe(device, eventName, handleCounter)
-                        }
-                    }
-                }
+  def devices = getDevices()
+  devices.each {
+    def device = it.value
+    def supportedCapabilities = device.capabilities
+    supportedCapabilities.each {
+      if (attributeMappings.containsKey(it.name)) {
+        def attributeMapping = attributeMappings.get(it.name)
+        attributeMapping.each {
+          if (it.value.type == "counter") {
+            state["${device.id}__${it.key}"] = 0
+            it.value.values.each {value ->
+              def eventName = "${it.key}.${value}"
+              log.debug("Subscribing to ${eventName} for device ${device}")
+              subscribe(device, eventName, handleCounter)
             }
+          }
         }
+      }
     }
+  }
 }
 
 mappings {
@@ -79,182 +79,158 @@ mappings {
 }
 
 def Map getAttributeMappings() {
-    return [
-    	"Alarm" : [
-            "alarmState" : [
-                name: "alarm_count",
-                type: "counter",
-                description: "Count of alarms.",
-                values: ["siren", "strobe", "both"]
-            ]
-        ],
-        "Battery" : [
-            "battery": [
-                name: "battery_percentage",
-                type: "gauge",
-                description: "Percentage of battery remaining.",
-                conversion: this.&valueFloat
-            ]
-        ],
-        "Carbon Monoxide Detector" : [
-            "carbonMonoxide" : [
-                name: "carbon_monoxide_detection_count",
-                type: "counter",
-                description: "Count of carbon monoxide detections.",
-                values: ["detected"]
-            ]
-        ],
-        "Color Temperature" : [
-            "colorTemperature" : [
-                name: "color_temperature_kelvins",
-                type: "gauge",
-                description: "Light color temperature.",
-                conversion: this.&valueFloat
-            ]
-        ],
-        "Contact Sensor" : [
-            "contact" : [
-                name: "contact_opened_count",
-                type: "counter",
-                description: "Count of times contact was opened.",
-                values: ["open"]
-            ]
-        ],
-        // "Contact Sensor" : [
-        //    "contact" : [
-        //        name: "contact_opened_count",
-        //        type: "counter",
-        //        description: "Count of times contact was opened.",
-        //        values: ["open"]
-        //    ]
-        //],
-        "Contact Sensor" : [
-            "contact" : [
-                name: "contact_state",
-                type: "gauge",
-                description: "1 if the contact is open.",
-                conversion: this.&valueOpenClose
-            ]
-        ],
-        "Energy Meter" : [
-            "energy" : [
-                name: "energy_usage_joules",
-                type: "gauge",
-                description: "Energy usage in joules.",
-                conversion: this.&valueJoules
-            ]
-        ],
-        "Relative Humidity Measurement" : [
-            "humidity" : [
-                name: "relative_humidity_percentage",
-                type: "gauge",
-                description: "Current relative humidity percentage.",
-                conversion: this.&valueFloat
-            ]
-        ],
-        "Color Control" : [
-            "hue" : [
-                name: "color_hue_percentage",
-                type: "gauge",
-                description: "Light color hue percentage.",
-                conversion: this.&valueFloat
-            ],
-            "saturation" : [
-                name: "color_saturation_percentage",
-                type: "gauge",
-                description: "Light color saturation percentage.",
-                conversion: this.&valueFloat
-            ]
-        ],
-        "Illuminance Measurement" : [
-            "illuminance" : [
-                name: "illuminance_lux",
-                type: "gauge",
-                description: "Light illuminance in lux.",
-                conversion: this.&valueFloat
-            ]
-        ],
-        "Switch Level" : [
-            "level" : [
-                name: "level",
-                type: "gauge",
-                description: "Level as a percentage.",
-                conversion: this.&valueFloat
-            ]
-        ],
-        //"Motion Sensor" : [
-        //    "motion" : [
-        //        name: "motion_detection_count",
-        //        type: "counter",
-        //        description: "Count of motion detections.",
-        //        values: ["active"]
-        //    ]
-        //],
-        "Motion Sensor" : [
-            "motion" : [
-                name: "motion_state",
-                type: "gauge",
-                description: "1 if motion detected.",
-                values: this.&valueOnOff
-            ]
-        ],
-        "Power Meter" : [
-            "power" : [
-                name: "power_usage_watts",
-                type: "gauge",
-                description: "Current power usage in watts.",
-                conversion: this.&valueFloat
-            ]
-        ],
-        "Presence Sensor" : [
-            "presence" : [
-                name: "presence_detection_count",
-                type: "counter",
-                description: "Count of presence detections.",
-                values: ["present"]
-            ]
-        ],
-        "Smoke Detector" : [
-            "smoke" : [
-                name: "smoke_detection_count",
-                type: "counter",
-                description: "Count of smoke detections.",
-                values: ["detected"]
-            ]
-        ],
-        "Switch" : [
-            "switch" : [
-                name: "switch_enabled",
-                type: "gauge",
-                description: "1 if the switch is on.",
-                conversion: this.&valueOnOff
-            ]
-        ],
-        "Tamper Alert" : [
-            "tamper" : [
-                name: "tamper_detected_count",
-                type: "counter",
-                description: "Count of tamper detections.",
-                values: ["detected"]
-            ]
-        ],
-        "Temperature Measurement" : [
-            "temperature" : [
-                name: "temperature_fahrenheit",
-                type: "gauge",
-                description: "Temperature in fahrenheit.",
-                conversion: this.&valueFloat
-            ]
-        ],
-        "Voltage Measurement" : [
-            "voltage" : [
-                name: "voltage_volts",
-                type: "gauge",
-                description: "Energy voltage in Volts.",
-                conversion: this.&valueFloat
-            ]
-        ]
+  return [
+    "Alarm" : [
+      "alarmState" : [
+        name: "alarm_triggered",
+        type: "gauge",
+        description: "1 if alarm triggered.",
+        values: this.&valueAlarmState
+      ]
+    ],
+    "Battery" : [
+      "battery": [
+        name: "battery_percentage",
+        type: "gauge",
+        description: "Percentage of battery remaining.",
+        conversion: this.&valueFloat
+      ]
+    ],
+    "Carbon Monoxide Detector" : [
+      "carbonMonoxide" : [
+        name: "carbon_monoxide_detected",
+        type: "counter",
+        description: "1 if carbon monoxide detected.",
+        values: this.&valueDetectedClear
+      ]
+    ],
+    "Color Temperature" : [
+      "colorTemperature" : [
+        name: "color_temperature_kelvins",
+        type: "gauge",
+        description: "Light color temperature.",
+        conversion: this.&valueFloat
+      ]
+    ],
+    "Contact Sensor" : [
+      "contact" : [
+        name: "contact_open",
+        type: "gauge",
+        description: "1 if the contact is open.",
+        conversion: this.&valueOpenClose
+      ]
+    ],
+    "Energy Meter" : [
+      "energy" : [
+        name: "energy_usage_joules",
+        type: "gauge",
+        description: "Energy usage in joules.",
+        conversion: this.&valueJoules
+      ]
+    ],
+    "Relative Humidity Measurement" : [
+      "humidity" : [
+        name: "relative_humidity_percentage",
+        type: "gauge",
+        description: "Current relative humidity percentage.",
+        conversion: this.&valueFloat
+      ]
+    ],
+    "Color Control" : [
+      "hue" : [
+        name: "color_hue_percentage",
+        type: "gauge",
+        description: "Light color hue percentage.",
+        conversion: this.&valueFloat
+      ],
+      "saturation" : [
+        name: "color_saturation_percentage",
+        type: "gauge",
+        description: "Light color saturation percentage.",
+        conversion: this.&valueFloat
+      ]
+    ],
+    "Illuminance Measurement" : [
+      "illuminance" : [
+        name: "illuminance_lux",
+        type: "gauge",
+        description: "Light illuminance in lux.",
+        conversion: this.&valueFloat
+      ]
+    ],
+    "Switch Level" : [
+      "level" : [
+        name: "level",
+        type: "gauge",
+        description: "Level as a percentage.",
+        conversion: this.&valueFloat
+      ]
+    ],
+    "Motion Sensor" : [
+      "motion" : [
+        name: "motion_detected",
+        type: "gauge",
+        description: "1 if motion detected.",
+        values: this.&valueActiveInactive
+      ]
+    ],
+    "Power Meter" : [
+      "power" : [
+        name: "power_usage_watts",
+        type: "gauge",
+        description: "Current power usage in watts.",
+        conversion: this.&valueFloat
+      ]
+    ],
+    "Presence Sensor" : [
+      "presence" : [
+        name: "presence_detected",
+        type: "gauge",
+        description: "1 if presence detected.",
+        values: this.&valuePresentNotPresent
+      ]
+    ],
+    "Smoke Detector" : [
+      "smoke" : [
+        name: "smoke_detected",
+        type: "gauge",
+        description: "1 if smoke detected.",
+        values: this.&valueDetectedClear
+      ]
+    ],
+    "Switch" : [
+      "switch" : [
+        name: "switch_enabled",
+        type: "gauge",
+        description: "1 if the switch is on.",
+        conversion: this.&valueOnOff
+      ]
+    ],
+    "Tamper Alert" : [
+      "tamper" : [
+        name: "tamper_detected",
+        type: "gauge",
+        description: "1 if tamper detected.",
+        values: this.&valueDetectedClear
+      ]
+    ],
+    "Temperature Measurement" : [
+      "temperature" : [
+        name: "temperature_fahrenheit",
+        type: "gauge",
+        description: "Temperature in fahrenheit.",
+        conversion: this.&valueFloat
+      ]
+    ],
+    "Voltage Measurement" : [
+      "voltage" : [
+        name: "voltage_volts",
+        type: "gauge",
+        description: "Energy voltage in Volts.",
+        conversion: this.&valueFloat
+      ]
     ]
+  ]
 }
 
 def handleCounter(evt) {
@@ -263,43 +239,43 @@ def handleCounter(evt) {
 }
 
 def listSensors() {
-    def attributeMappings = getAttributeMappings()
-    def descriptions = [:]
-    def metrics = [:]
-    def devices = getDevices()
-    devices.each {
-        def device = it.value
-        def metricDescriptions = [:]
-        def metric = [:]
-        def metricAttributes = [:]
-        def supportedCapabilities = device.capabilities
-        supportedCapabilities.each {
-        	if (attributeMappings.containsKey(it.name)) {
-	            def attributeMapping = attributeMappings.get(it.name)
-            	attributeMapping.each {
-                	if (it.value.type == "gauge") {
-                        def currentValue = device.currentValue(it.key)
-                        if (currentValue != null) {
-		                    metricDescriptions[it.value.name] = it.value.description
-                            metricAttributes[it.value.name] = it.value.conversion(currentValue)
-                        }
-                    } else if (it.value.type == "counter") {
-                        metricDescriptions[it.value.name] = it.value.description
-                        metricAttributes[it.value.name] = state["${device.id}__${it.key}"]
-                    }
-                }
+  def attributeMappings = getAttributeMappings()
+  def descriptions = [:]
+  def metrics = [:]
+  def devices = getDevices()
+  devices.each {
+    def device = it.value
+    def metricDescriptions = [:]
+    def metric = [:]
+    def metricAttributes = [:]
+    def supportedCapabilities = device.capabilities
+    supportedCapabilities.each {
+      if (attributeMappings.containsKey(it.name)) {
+        def attributeMapping = attributeMappings.get(it.name)
+        attributeMapping.each {
+          if (it.value.type == "gauge") {
+            def currentValue = device.currentValue(it.key)
+            if (currentValue != null) {
+              metricDescriptions[it.value.name] = it.value.description
+              metricAttributes[it.value.name] = it.value.conversion(currentValue)
             }
+          } else if (it.value.type == "counter") {
+            metricDescriptions[it.value.name] = it.value.description
+            metricAttributes[it.value.name] = state["${device.id}__${it.key}"]
+          }
         }
-        if (metricAttributes.size() > 0) {
-            ["name", "displayName"].each {
-                metric[it] = device."$it"
-            }
-            metric.attributes = metricAttributes
-            descriptions = descriptions << metricDescriptions
-            metrics[device.id] = metric
-        }
+      }
     }
-    [descriptions: descriptions, sensors: metrics]
+    if (metricAttributes.size() > 0) {
+      ["name", "displayName"].each {
+          metric[it] = device."$it"
+      }
+      metric.attributes = metricAttributes
+      descriptions = descriptions << metricDescriptions
+      metrics[device.id] = metric
+    }
+  }
+  [descriptions: descriptions, sensors: metrics]
 }
 
 private getDevices() {
@@ -321,38 +297,63 @@ private getDevices() {
 }
 
 private valueFloat(value) {
-    if (!value) {
-        return 0.0
-    }
-    try {
-        float f = Float.valueOf(value).floatValue();
-        return f
-    } catch (NumberFormatException nfe) {
-        return 0.0
-    }
+  if (!value) {
+    return 0.0
+  }
+  try {
+    float f = Float.valueOf(value).floatValue();
+    return f
+  } catch (NumberFormatException nfe) {
+    return 0.0
+  }
 }
 
 private valueOneOf(value, options) {
-    if (!value?.trim()) {
-        return 0.0
-    }
-    if (value?.trim() == options[0]) {
-        return 0.0
-    }
-    if (value?.trim() == options[1]) {
-        return 1.0
-    }
+  if (!value?.trim()) {
     return 0.0
+  }
+  if (value?.trim() == options[0]) {
+    return 0.0
+  }
+  if (value?.trim() == options[1]) {
+    return 1.0
+  }
+  return 0.0
 }
 
 private valueOnOff(value) {
-    return valueOneOf(value, ["off", "on"])
+  return valueOneOf(value, ["off", "on"])
+}
+
+private valuePresentNotPresent(value) {
+  return valueOneOf(value, ["not present", "present"])
+}
+
+private valueActiveInactive(value) {
+  return valueOneOf(value, ["inactive", "active"])
+}
+
+private valueDetectedClear(value) {
+  return valueOneOf(value, ["clear", "detected"])
 }
 
 private valueOpenClose(value) {
-    return valueOneOf(value, ["close", "open"])
+  return valueOneOf(value, ["close", "open"])
+}
+
+private valueAlarmState(value) {
+  if (!value?.trim()) {
+    return 0.0
+  }
+  if (value?.trim() == "off") {
+    return 0.0
+  }
+  if (value?.trim() == "siren" || value?.trim() == "strobe" || value?.trim() == "both") {
+    return 1.0
+  }
+  return 0.0
 }
 
 private valueJoules(value) {
-    return valueFloat(value) * 3600000
+  return valueFloat(value) * 3600000
 }
