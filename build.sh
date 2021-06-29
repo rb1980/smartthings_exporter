@@ -172,7 +172,7 @@ function run() {
     go test -v ./... || fatal "$gopackage tests failed: $?"
   fi
 
-  XC_ARCH=${XC_ARCH:-"386 amd64"}
+  XC_ARCH=${XC_ARCH:-"386 amd64 arm arm64"}
   XC_OS=${XC_OS:-"darwin linux windows"}
   if [[ -z "$TRAVIS" && "$build_all" != "true" ]]; then
     XC_OS=$(go env GOOS)
