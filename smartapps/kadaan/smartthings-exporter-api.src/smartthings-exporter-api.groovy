@@ -120,6 +120,22 @@ def Map getAttributeMappings() {
                 values: ["open"]
             ]
         ],
+        // "Contact Sensor" : [
+        //    "contact" : [
+        //        name: "contact_opened_count",
+        //        type: "counter",
+        //        description: "Count of times contact was opened.",
+        //        values: ["open"]
+        //    ]
+        //],
+        "Contact Sensor" : [
+            "contact" : [
+                name: "contact_state",
+                type: "gauge",
+                description: "1 if the contact is open.",
+                conversion: this.&valueOpenClose
+            ]
+        ],
         "Energy Meter" : [
             "energy" : [
                 name: "energy_usage_joules",
@@ -166,12 +182,20 @@ def Map getAttributeMappings() {
                 conversion: this.&valueFloat
             ]
         ],
+        //"Motion Sensor" : [
+        //    "motion" : [
+        //        name: "motion_detection_count",
+        //        type: "counter",
+        //        description: "Count of motion detections.",
+        //        values: ["active"]
+        //    ]
+        //],
         "Motion Sensor" : [
             "motion" : [
-                name: "motion_detection_count",
-                type: "counter",
-                description: "Count of motion detections.",
-                values: ["active"]
+                name: "motion_state",
+                type: "gauge",
+                description: "1 if motion detected.",
+                values: this.&valueOnOff
             ]
         ],
         "Power Meter" : [
@@ -323,6 +347,10 @@ private valueOneOf(value, options) {
 
 private valueOnOff(value) {
     return valueOneOf(value, ["off", "on"])
+}
+
+private valueOpenClose(value) {
+    return valueOneOf(value, ["close", "open"])
 }
 
 private valueJoules(value) {
