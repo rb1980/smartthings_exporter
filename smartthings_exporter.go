@@ -123,9 +123,8 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		}
 	}
 }
-
 func init() {
-	prometheus.MustRegister(version.NewCollector("smartthings_exporter"))
+	prometheus.MustRegister(prometheus.NewCollector("smartthings_exporter"))
 
 	// Initialize logger
 	logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
