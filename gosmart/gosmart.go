@@ -7,17 +7,19 @@
 package gosmart
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
 	"os/user"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -25,7 +27,7 @@ const (
 	authError = "<html><body>AUthentication error. Please see terminal output for details.</body></html>"
 
 	// Endpoints URL
-	endPointsURI = "https://graph.api.smartthings.com/api/smartapps/endpoints"
+	endPointsURI = "https://api.smartthings.com/api/smartapps/endpoints"
 
 	// URL paths used for Oauth authentication on localhost
 	callbackPath = "/OAuthCallback"
@@ -75,8 +77,8 @@ func NewOAuthConfig(client, secret string) *oauth2.Config {
 		ClientSecret: secret,
 		Scopes:       []string{"app"},
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  "https://graph.api.smartthings.com/oauth/authorize",
-			TokenURL: "https://graph.api.smartthings.com/oauth/token",
+			AuthURL:  "https://api.smartthings.com/oauth/authorize",
+			TokenURL: "https://api.smartthings.com/oauth/token",
 		},
 	}
 }
@@ -148,7 +150,7 @@ func (g *Auth) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve the code from the URL, and exchange for a token
 	code := r.FormValue("code")
-	token, err := g.config.Exchange(oauth2.NoContext, code)
+	token, err := g.config.Exchange(context.Background(), code)
 	if err != nil {
 		g.rchan <- oauthReturn{
 			token: nil,

@@ -1,64 +1,77 @@
-# smarthings_exporter [![Build Status](https://travis-ci.org/kadaan/smartthings_exporter.svg?branch=master)](https://travis-ci.org/kadaan/smartthings_exporter) [![Coverage Status](https://img.shields.io/coveralls/github/kadaan/smartthings_exporter/master.svg)](https://coveralls.io/github/kadaan/smartthings_exporter) [![Go Report Card](https://goreportcard.com/badge/github.com/kadaan/smartthings_exporter)](https://goreportcard.com/report/github.com/kadaan/smartthings_exporter)
+# SmartThings Exporter
 
-Smartthings_exporter is a command line tool to export information about your SmartThings
-sensors in a format that can be scraped by [Prometheus](http://prometheus.io). The tool talks 
-to the SmartThings API and collects sensor data which is exposed as metrics over http.
+A Prometheus exporter for SmartThings devices and sensors. This exporter allows you to monitor your SmartThings devices using Prometheus and visualize the data using tools like Grafana.
+
+## Features
+
+- Exports SmartThings device metrics in Prometheus format
+- Supports OAuth2 authentication with SmartThings API
+- Provides device status and sensor readings
+- Easy to set up and configure
+
+## Prerequisites
+
+- Go 1.24.1 or later
+- SmartThings OAuth client credentials
+- SmartThings-compatible devices
 
 ## Installation
 
-The installation instructions assume a properly installed and configured Go
-development environment. The very first step is to download and build
-Smartthings_exporter (this step will also download and compile the GoSmart library):
-
-
-```
-$ go get -u github.com/kadaan/smartthings_exporter
+```bash
+go install github.com/rb1980/smartthings_exporter@latest
 ```
 
-### SmartThings Setup
+## Configuration
 
-Before you can use Smartthings_exporter, you need to register it with SmartThings.  
+1. First, register your SmartThings OAuth client:
 
-The first step is to setup the API that Smartthings_exporter uses to communicate with SmartThings.  To do this you need to:
-
-1. Navigate to the [SmartThings API website](https://graph.api.smartthings.com/). Register a new account (or login if you already have an account).
-2. Once logged in, click on My SmartApps. This will show a list of the current SmartApps installed (it could be blank for new accounts).
-3. Click the `Settings` button at the top right.
-4. Click the `Add new repository` link at the bottom of the settings dialog box.
-5. In the new row fill in:
-    1. Owner: `kadaan`
-    2. Name: `smartthings_exporter`
-    3. Branch: `master`
-6. Press `Save`
-7. Click `Update from Repo` at the top right
-8. Choose `smartthings_exporter (master)`
-9. Under the `New` list on the right check `smartapps/kadaan/smartthings-exporter-api.src/smartthings-exporter-api.groovy`
-10. Check `Publish` at the bottom
-11. Click `Execute Update`
-12. Click the `Edit Properties` button for the `kadaan : Smartthings Exporter API` entry
-13. Click `OAuth`
-14. Click `Enable OAuth in SmartApp`
-15. In `Redirect URI`, enter `http://localhost:4567/OAuthCallback`. _Case is important here_
-16. Click `Update`
-17. Click `OAuth`
-18. Take note of the `Client ID` and `Client Secret`. These will be used to authenticate and retrieve a token. Once the token is saved locally by the library, authentication can proceed without user intervention.
-
-### Smartthings_exporter configuration
-
-We now need to register Smartthings_exporter to with your SmartThings app.
-
-Run:
-
-```
-$ smartthings_exporter register --smartthings.oauth-client=[client_id] > .st_token
+```bash
+smartthings_exporter register --smartthings.oauth-client=YOUR_CLIENT_ID
 ```
 
-Follow the prompts to authorize the app.
+2. Follow the prompts to complete OAuth registration and save the token.
 
-## Running
+## Usage
 
-Now we can start Smartthings_exporter by running:
+Start the exporter:
 
+```bash
+smartthings_exporter start \
+  --smartthings.oauth-client=YOUR_CLIENT_ID \
+  --smartthings.oauth-token.file=/path/to/token.json \
+  --web.listen-address=:9499
 ```
-$ smartthings_exporter --smartthings.oauth-client=[client_id] --smartthings.oauth-token.file=.st_token
+
+### Flags
+
+- `--web.listen-address`: The address to listen on for web interface and telemetry (default: ":9499")
+- `--web.telemetry-path`: Path under which to expose metrics (default: "/metrics")
+- `--smartthings.oauth-client`: SmartThings OAuth client ID (required)
+- `--smartthings.oauth-token.file`: File containing the SmartThings OAuth token (required)
+
+## Metrics
+
+The exporter provides various metrics from your SmartThings devices, including:
+
+- Device status
+- Sensor readings (temperature, humidity, etc.)
+- Battery levels
+- Connection status
+
+All metrics are prefixed with `smartthings_` and include device ID and name labels.
+
+## Building from Source
+
+```bash
+git clone https://github.com/rb1980/smartthings_exporter.git
+cd smartthings_exporter
+go build
 ```
+
+## License
+
+Licensed under the Apache License, Version 2.0. See LICENSE file for details.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.

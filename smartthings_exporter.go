@@ -19,21 +19,23 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kadaan/smartthings_exporter/gosmart"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	plog "github.com/prometheus/common/log"
-	"github.com/prometheus/common/version"
-	"golang.org/x/crypto/ssh/terminal"
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"net/http"
 	"os"
 	"path/filepath"
 	"syscall"
+
+	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/version"
+	"github.com/rb1980/smartthings_exporter/gosmart"
+	"golang.org/x/oauth2"
+	"golang.org/x/term"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 const (
@@ -42,6 +44,7 @@ const (
 
 var (
 	application = kingpin.New("smartthings_exporter", "Smartthings exporter for Prometheus")
+	logger      log.Logger
 
 	registerCommand        *kingpin.CmdClause
 	registerPort           *uint16
@@ -73,12 +76,14 @@ func NewExporter(oauthClient string, oauthToken *oauth2.Token) (*Exporter, error
 	client := config.Client(ctx, oauthToken)
 	endpoint, err := gosmart.GetEndPointsURI(client)
 	if err != nil {
-		plog.Fatalf("Error reading endpoints URI: %v\n", err)
+		level.Error(logger).Log("msg", "Error reading endpoints URI", "err", err)
+		return nil, err
 	}
 
 	_, verr := gosmart.GetSensors(client, endpoint)
 	if verr != nil {
-		plog.Fatalf("Error verifying connection to endpoints URI %v: %v\n", endpoint, err)
+		level.Error(logger).Log("msg", "Error verifying connection to endpoints URI", "endpoint", endpoint, "err", verr)
+		return nil, verr
 	}
 
 	// Init our exporter.
@@ -102,7 +107,8 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	// Iterate over all devices and collect timeseries info.
 	sensors, err := gosmart.GetSensors(e.client, e.endpoint)
 	if err != nil {
-		plog.Errorf("Error reading list of sensors from %v: %v\n", e.endpoint, err)
+		level.Error(logger).Log("msg", "Error reading list of sensors", "endpoint", e.endpoint, "err", err)
+		return
 	}
 
 	for _, sensor := range sensors {
@@ -121,6 +127,10 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 func init() {
 	prometheus.MustRegister(version.NewCollector("smartthings_exporter"))
 
+	// Initialize logger
+	logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
+
 	registerCommand = application.Command("register", "Register smartthings_exporter with Smartthings and outputs the token.").Action(register)
 	registerPort = registerCommand.Flag("register.listen-port", "The port to listen on for the OAuth register.").Default("4567").Uint16()
 	registerOAuthClient = registerCommand.Flag("smartthings.oauth-client", "Smartthings OAuth client ID.").Required().String()
@@ -133,42 +143,39 @@ func init() {
 }
 
 func main() {
-	plog.AddFlags(application)
-	application.Version(version.Print("smartthings_exporter"))
-	application.HelpFlag.Short('h')
 	_, err := application.Parse(os.Args[1:])
 	if err != nil {
-		application.Fatalf("%s, try --help", err)
+		level.Error(logger).Log("msg", "Error parsing arguments", "err", err)
+		os.Exit(1)
 	}
 }
 
 func register(_ *kingpin.ParseContext) error {
-	_, _ = fmt.Fprintln(os.Stderr, "Registering smartthings_exporter with Smartthings")
+	level.Info(logger).Log("msg", "Registering smartthings_exporter with Smartthings")
 	_, _ = fmt.Fprintln(os.Stderr, "Enter your Smartthings OAuth secret:")
-	bytes, err := terminal.ReadPassword(int(syscall.Stdin))
+	bytes, err := term.ReadPassword(int(syscall.Stdin))
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Failed to get Smartthings OAuth secret.")
+		level.Error(logger).Log("msg", "Failed to get Smartthings OAuth secret", "err", err)
 		return err
 	}
 
 	config := gosmart.NewOAuthConfig(*registerOAuthClient, string(bytes))
 	gst, err := gosmart.NewAuth(int(*registerPort), config)
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Failed to create Smartthings OAuth client.")
+		level.Error(logger).Log("msg", "Failed to create Smartthings OAuth client", "err", err)
 		return err
 	}
 
 	_, _ = fmt.Fprintf(os.Stderr, "Please login by visiting: http://localhost:%d\n", *registerPort)
 	token, err := gst.FetchOAuthToken()
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Failed to fetch Smartthings OAuth token.")
+		level.Error(logger).Log("msg", "Failed to fetch Smartthings OAuth token", "err", err)
 		return err
 	}
 
 	blob, err := json.Marshal(token)
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Failed to serialize Smartthings OAuth token to JSON.",
-			(*registerOAuthTokenFile).Name())
+		level.Error(logger).Log("msg", "Failed to serialize Smartthings OAuth token to JSON", "err", err)
 		return err
 	}
 
@@ -177,26 +184,25 @@ func register(_ *kingpin.ParseContext) error {
 }
 
 func monitor(_ *kingpin.ParseContext) error {
-	plog.Infoln("Starting smartthings_exporter", version.Info())
-	plog.Infoln("Build context", version.BuildContext())
+	level.Info(logger).Log("msg", "Starting smartthings_exporter", "version", version.Info())
+	level.Info(logger).Log("msg", "Build context", "context", version.BuildContext())
 
 	tokenFilePath, err := filepath.Abs(*monitorOAuthTokenFile)
 	if err != nil {
-		plog.Errorf("Failed to get absolution path to token file %s.\n", *monitorOAuthTokenFile)
+		level.Error(logger).Log("msg", "Failed to get absolute path to token file", "file", *monitorOAuthTokenFile, "err", err)
 		return err
 	}
 
 	token, err := gosmart.LoadToken(tokenFilePath)
 	if err != nil || !token.Valid() {
-		plog.Errorf("Failed to load Smartthings OAuth token from %s.\n", *monitorOAuthTokenFile)
+		level.Error(logger).Log("msg", "Failed to load Smartthings OAuth token", "file", tokenFilePath, "err", err)
 		return err
 	}
 
 	exporter, err := NewExporter(*monitorOAuthClient, token)
 	if err != nil {
-		plog.Fatalln(err)
+		level.Error(logger).Log("msg", "Failed to create exporter", "err", err)
 		return err
-
 	}
 	prometheus.MustRegister(exporter)
 
@@ -211,7 +217,10 @@ func monitor(_ *kingpin.ParseContext) error {
 			        </html>`))
 	})
 
-	plog.Infoln("Listening on", *listenAddress)
-	plog.Fatal(http.ListenAndServe(*listenAddress, nil))
+	level.Info(logger).Log("msg", "Listening on", "address", *listenAddress)
+	if err := http.ListenAndServe(*listenAddress, nil); err != nil {
+		level.Error(logger).Log("msg", "Error starting HTTP server", "err", err)
+		return err
+	}
 	return nil
 }
