@@ -19,6 +19,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -28,12 +29,12 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	"github.com/kadaan/smartthings_exporter/gosmart"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/version"
+	"github.com/rb1980/smartthings_exporter/gosmart"
 	"golang.org/x/crypto/ssh/terminal"
-	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -46,10 +47,9 @@ var (
 	application = kingpin.New("smartthings_exporter", "Smartthings exporter for Prometheus")
 	logger      log.Logger
 
-	registerCommand        *kingpin.CmdClause
-	registerPort           *uint16
-	registerOAuthClient    *string
-	registerOAuthTokenFile **os.File
+	registerCommand     *kingpin.CmdClause
+	registerPort        *uint16
+	registerOAuthClient *string
 
 	monitorCommand        *kingpin.CmdClause
 	listenAddress         *string
@@ -59,6 +59,26 @@ var (
 
 	metrics = map[string]*prometheus.Desc{}
 )
+
+func init() {
+	// Register version and build info
+	prometheus.MustRegister(collectors.NewBuildInfoCollector())
+
+	// Initialize logger
+	logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
+
+	// Initialize commands and flags
+	registerCommand = application.Command("register", "Register smartthings_exporter with Smartthings and outputs the token.").Action(register)
+	registerPort = registerCommand.Flag("register.listen-port", "The port to listen on for the OAuth register.").Default("4567").Uint16()
+	registerOAuthClient = registerCommand.Flag("smartthings.oauth-client", "Smartthings OAuth client ID.").Required().String()
+
+	monitorCommand = application.Command("start", "Start the smartthings_exporter.").Default().Action(monitor)
+	listenAddress = monitorCommand.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Default(":9499").String()
+	metricsPath = monitorCommand.Flag("web.telemetry-path", "Path under which to expose metrics.").Default("/metrics").String()
+	monitorOAuthClient = monitorCommand.Flag("smartthings.oauth-client", "Smartthings OAuth client ID.").Required().String()
+	monitorOAuthTokenFile = monitorCommand.Flag("smartthings.oauth-token.file", "File containing the Smartthings OAuth token.").Required().ExistingFile()
+}
 
 // Exporter collects smartthings stats and exports them using the prometheus metrics package.
 type Exporter struct {
@@ -121,31 +141,6 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			}
 			ch <- prometheus.MustNewConstMetric(metrics[val.Name], prometheus.GaugeValue, val.Value, sensor.ID, sensor.DisplayName)
 		}
-	}
-}
-func init() {
-	prometheus.MustRegister(prometheus.NewCollector("smartthings_exporter"))
-
-	// Initialize logger
-	logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
-
-	registerCommand = application.Command("register", "Register smartthings_exporter with Smartthings and outputs the token.").Action(register)
-	registerPort = registerCommand.Flag("register.listen-port", "The port to listen on for the OAuth register.").Default("4567").Uint16()
-	registerOAuthClient = registerCommand.Flag("smartthings.oauth-client", "Smartthings OAuth client ID.").Required().String()
-
-	monitorCommand = application.Command("start", "Start the smartthings_exporter.").Default().Action(monitor)
-	listenAddress = monitorCommand.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Default(":9499").String()
-	metricsPath = monitorCommand.Flag("web.telemetry-path", "Path under which to expose metrics.").Default("/metrics").String()
-	monitorOAuthClient = monitorCommand.Flag("smartthings.oauth-client", "Smartthings OAuth client ID.").Required().String()
-	monitorOAuthTokenFile = monitorCommand.Flag("smartthings.oauth-token.file", "File containing the Smartthings OAuth token.").Required().ExistingFile()
-}
-
-func main() {
-	_, err := application.Parse(os.Args[1:])
-	if err != nil {
-		level.Error(logger).Log("msg", "Error parsing arguments", "err", err)
-		os.Exit(1)
 	}
 }
 
@@ -222,4 +217,12 @@ func monitor(_ *kingpin.ParseContext) error {
 		return err
 	}
 	return nil
+}
+
+func main() {
+	_, err := application.Parse(os.Args[1:])
+	if err != nil {
+		level.Error(logger).Log("msg", "Error parsing arguments", "err", err)
+		os.Exit(1)
+	}
 }
