@@ -19,7 +19,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -29,12 +28,13 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	"github.com/kadaan/smartthings_exporter/gosmart"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/version"
-	"github.com/rb1980/smartthings_exporter/gosmart"
+	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
-	"golang.org/x/term"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -153,7 +153,7 @@ func main() {
 func register(_ *kingpin.ParseContext) error {
 	level.Info(logger).Log("msg", "Registering smartthings_exporter with Smartthings")
 	_, _ = fmt.Fprintln(os.Stderr, "Enter your Smartthings OAuth secret:")
-	bytes, err := term.ReadPassword(int(syscall.Stdin))
+	bytes, err := terminal.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		level.Error(logger).Log("msg", "Failed to get Smartthings OAuth secret", "err", err)
 		return err
