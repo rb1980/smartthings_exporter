@@ -1,0 +1,14 @@
+language: go
+go:
+  - 1.15
+script: "./build.sh"
+deploy:
+  provider: releases
+  api_key:
+    secure: JuAICm7Uf3vOr5qvWsFxHzqA1fSiJMy06RZA6tDUNUHcRO2fmnWH1OAR45GOeI/AS9PKEUnz1Aoo95erpCoDY11nqgvfCE0jwND52n1cBnEWUcJPDTi8+xEt9eDEtxhP2hB6mW1IeHg88VohEWsvfm/NVZ5/wQdXs6p0bKtto0LyqlefYXy6qeI+pk0d78t4Lq1NVEt+6e4m79/PFfyf+LkttPbg8PNrenTXGYVSa5ZLXBj3+srms7MUeg82zp4p/DtqaJc99OdKHTUreytp1xNyOF/fgLLUWdBb11npEYq/bkoGoliKFKnA2onBnVVdZVkH8COfYMr1rZCeuhH+fl6BFX1o7y7N/+98fr6Fw+O8BIzO8sbWq74zvAC2loRytVy1MH/RWSD6S4NBQU/lmw14mYIc29MtkK5cmLDLWRB0+XMDmOMzbzieMCcKeRn3SxoXakLZ0RgWh5NB33CXuOO9TG2VVfBWIqJWQRAmuBEm44ZO2mmMwOOL52Ti1fo9VI8HmimoSBDd2ewUHL+LId/JyD0mXkVKhYbvrc7HCqUK7WM/xPMdqMppDZ7BWzPjqk4cQWamoPkjTUR+s9Cj182WRpXi7MacmYXMNvGpScWTqSnIOhdsZtzNNY71Ldu27sK8yMhX0jNL1HdhmMm2R1hahNkMTV4GqlvSiXY3xak=
+  file_glob: true
+  file: dist/*.tar.gz
+  skip_cleanup: true
+  on:
+    repo: kadaan/smartthings_exporter
+    tags: true
